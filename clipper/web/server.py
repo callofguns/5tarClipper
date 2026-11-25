@@ -18,6 +18,7 @@ from clipper.jobs import JobStore
 
 STATIC = Path(__file__).parent / "static"
 UPLOAD_TYPES = {".mp4", ".mkv", ".mov", ".webm", ".avi"}
+PICKERS = ("auto", "claude", "local", "none")
 
 
 def create_app(cfg: dict) -> FastAPI:
@@ -76,7 +77,16 @@ def create_app(cfg: dict) -> FastAPI:
         return {"layout": vcfg["layout"], "facecam": vcfg["facecam"],
                 "min_clip_seconds": vcfg["min_clip_seconds"],
                 "max_clip_seconds": vcfg["max_clip_seconds"], "max_clips": vcfg["max_clips"],
-                "claude_model": vcfg["claude_model"]}
+                "claude_model": vcfg["claude_model"], "local_model": vcfg["local_model"],
+                "picker": vcfg["picker"]}
+
+    @app.get("/api/pickers")
+    def pickers():
+        """Which moment pickers work on this PC right now."""
+        from clipper.video import local_ai, rank
+        return {"claude": rank.claude_available(), "local": local_ai.model_ready(vcfg["local_model"]),
+                "none": True, "auto_uses": rank.resolve_picker("auto", vcfg),
+                "local_model": vcfg["local_model"], "default": vcfg["picker"]}
 
     @app.get("/api/jobs")
     def list_jobs():
@@ -84,12 +94,15 @@ def create_app(cfg: dict) -> FastAPI:
 
     @app.post("/api/jobs")
     def new_job(creator: str = Form(""), permission: str = Form(""), layout: str = Form("center"),
-                facecam: str = Form(""), url: str = Form(""), file: UploadFile | None = File(None)):
+                facecam: str = Form(""), url: str = Form(""), picker: str = Form("auto"),
+                file: UploadFile | None = File(None)):
         creator, permission = creator.strip(), permission.strip()
         if not creator or not permission:
             raise HTTPException(400, "Fill in the creator's name and the permission you have.")
         if layout not in ("center", "facecam"):
             raise HTTPException(400, "Layout must be center or facecam.")
+        if picker not in PICKERS:
+            raise HTTPException(400, "Moment picker must be auto, claude, local or none.")
         fc = parse_facecam(facecam)
         has_file = file is not None and file.filename
         if bool(url.strip()) == bool(has_file):
@@ -109,9 +122,26 @@ def create_app(cfg: dict) -> FastAPI:
             except UserFixable as e:
                 raise HTTPException(400, str(e)) from e
             job = store.create({"type": "url", "url": link}, creator, permission, layout, fc)
+        job.update(picker=picker)
         job.log("Added. Creator: " + creator + " | Permission: " + permission)
         store.enqueue(job)
         return store.summary(job)
+
+    class Repick(BaseModel):
+        picker: str
+
+    @app.post("/api/jobs/{job_id}/repick")
+    def repick(job_id: str, body: Repick):
+        """Pick the moments again with a different picker (download/transcript are reused)."""
+        job = job_or_404(job_id)
+        if job.data["status"] in ("queued", "running"):
+            raise HTTPException(409, "It's already in progress.")
+        if body.picker not in PICKERS:
+            raise HTTPException(400, "Moment picker must be auto, claude, local or none.")
+        job.update(picker=body.picker)
+        job.log(f"Picking moments again with: {body.picker}.")
+        store.enqueue(job, "full")
+        return {"ok": True}
 
     @app.get("/api/jobs/{job_id}")
     def get_job(job_id: str):

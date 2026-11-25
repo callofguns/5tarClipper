@@ -48,8 +48,8 @@ def run_job(job, cfg: dict, mode: str = "full") -> None:
         # --- 2. loud moments ---
         job.stage("audio", "Finding loud moments")
         wav = audio.extract_audio(source, work / "audio.wav")
-        loud = audio.find_loud_moments(audio.loudness_curve(wav), vcfg["loud_db_above_median"],
-                                       vcfg["loud_min_seconds"])
+        db_curve = audio.loudness_curve(wav)
+        loud = audio.find_loud_moments(db_curve, vcfg["loud_db_above_median"], vcfg["loud_min_seconds"])
         job.update(loud=loud)
         job.log(f"Found {len(loud)} loud moments.")
 
@@ -62,21 +62,25 @@ def run_job(job, cfg: dict, mode: str = "full") -> None:
         job.log(f"Transcript: {words} words"
                 + (f" in {tr['seconds_taken']}s." if "seconds_taken" in tr else "."))
 
-        # --- 4. Claude picks moments ---
-        job.stage("rank", "Claude is picking the best moments")
-        moments = rank.rank_moments(tr, loud, info["duration"], vcfg, job.data["creator"],
-                                    work / "moments.json",
-                                    (work / "transcript.json").stat().st_mtime, log=job.log)
+        # --- 4. pick moments (Claude, local AI or no AI) ---
+        choice = job.data.get("picker", "auto")
+        picker = rank.resolve_picker(choice, vcfg)
+        job.stage("rank", f"{rank.PICKER_NAMES[picker]} is picking the best moments")
+        moments, picker = rank.rank_moments(
+            tr, loud, db_curve, info["duration"], vcfg, job.data["creator"], work,
+            (work / "transcript.json").stat().st_mtime, choice=choice, log=job.log)
+        job.update(picked_by=picker)
 
         # --- 5. fix cut points ---
         job.stage("plan", "Fixing cut points")
         plan = []
+        who = rank.PICKER_NAMES[picker]
         for m in moments:
             s, e, notes = boundaries.adjust(m["start"], m["end"], tr, loud, info["duration"],
                                             vcfg["min_clip_seconds"], vcfg["max_clip_seconds"])
-            plan.append({**m, "claude_start": m["start"], "claude_end": m["end"],
-                         "start": s, "end": e, "cut_notes": notes})
-            job.log(f"\"{m['title']}\": Claude {mmss(m['start'])}-{mmss(m['end'])} -> "
+            plan.append({**m, "picked_start": m["start"], "picked_end": m["end"],
+                         "start": s, "end": e, "cut_notes": notes, "picked_by": picker})
+            job.log(f"\"{m['title']}\": {who} {mmss(m['start'])}-{mmss(m['end'])} -> "
                     f"final {mmss(s)}-{mmss(e)} ({e - s:.0f}s)" + (f" [{'; '.join(notes)}]" if notes else ""))
         job.update(plan=plan)
     else:
@@ -108,7 +112,9 @@ def run_job(job, cfg: dict, mode: str = "full") -> None:
                            facecam, ass, info["fps"])
         meta = {"file": f"{name}.mp4", "title": p["title"], "reason": p["reason"],
                 "score": p["score"], "start": p["start"], "end": p["end"],
-                "claude_start": p["claude_start"], "claude_end": p["claude_end"],
+                "picked_by": p.get("picked_by", "claude"),
+                "picked_start": p.get("picked_start", p.get("claude_start")),
+                "picked_end": p.get("picked_end", p.get("claude_end")),
                 "cut_notes": p["cut_notes"], "layout": layout,
                 "source": job.data["source"].get("url") or job.data["source"].get("filename"),
                 "creator": job.data["creator"], "permission": job.data["permission"],

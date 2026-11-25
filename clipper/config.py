@@ -44,6 +44,11 @@ def load_config(path: Path = CONFIG_PATH) -> dict:
     check_facecam(video.get("facecam"), "video.facecam in config.yaml")
     if not (5 <= video.get("min_clip_seconds", 20) < video.get("max_clip_seconds", 60) <= 600):
         raise ConfigError("video.min_clip_seconds must be smaller than video.max_clip_seconds.")
+    video.setdefault("picker", "auto")
+    video.setdefault("local_model", "granite4.2:8b")
+    video.setdefault("claude_model", "sonnet")
+    if video["picker"] not in ("auto", "claude", "local", "none"):
+        raise ConfigError("video.picker must be auto, claude, local or none.")
     if not video.get("output_folder"):
         video["output_folder"] = str(Path.home() / "Videos" / "GTA6 Clipper") if FROZEN else "output/review"
     return cfg

@@ -25,8 +25,14 @@ video:
   loud_db_above_median: 10
   loud_min_seconds: 1.0
 
-  # Moment picking with Claude Code (claude -p). Uses your Claude plan's usage limits.
+  # Who picks the moments (default for new videos; you can choose per video in the app):
+  #   auto   = best available: Claude, then Local AI, then No AI
+  #   claude = Claude Code (claude -p). Best picks. Uses your Claude plan's usage limits.
+  #   local  = a local AI model in Ollama (free, runs on this PC, weaker picks)
+  #   none   = No AI: picks by loudness, reactions and talking speed
+  picker: auto
   claude_model: sonnet
+  local_model: granite4.2:8b   # any Ollama model works, e.g. qwen3.5:9b or qwen3.5:4b
   max_clips: 5
   min_clip_seconds: 20
   max_clip_seconds: 60

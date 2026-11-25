@@ -66,7 +66,8 @@
   @media (max-width: 600px) { .steps { grid-template-columns: repeat(3, 1fr); } }
   .error-box { background: rgba(255,107,107,.08); border: 1px solid rgba(255,107,107,.4); color: #ffd0d0;
                padding: 12px; border-radius: 8px; margin-top: 14px; white-space: pre-wrap; }
-  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; margin-top: 16px; }
+  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
+  .clips .clip { max-width: 300px; }
   .clip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .clip video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; }
   .clip .body { padding: 10px 12px; }
@@ -80,6 +81,10 @@
   .fc-box { position: absolute; border: 3px solid var(--accent); background: rgba(255,79,163,.15); pointer-events: none; }
   .fc-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-top: 10px; }
   .fc-controls input { width: 190px; }
+  .select { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+            border-radius: 8px; padding: 9px 11px; font: inherit; }
+  .select.inline { width: auto; display: inline-block; }
+  .picked { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; color: var(--muted); }
   .setup { margin-bottom: 16px; border-color: var(--accent-2); }
   .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
   .req { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -100,6 +105,7 @@
 <header>
   <h1><span>GTA VI</span> Clipper</h1>
   <p>Runs on this PC · clips are saved for you to review · nothing is ever posted</p>
+  <button class="btn ghost" id="setupToggle" style="margin-left:auto;padding:6px 12px;font-size:13px">Setup</button>
 </header>
 <main>
   <section>
@@ -130,6 +136,9 @@
           <button type="button" data-v="facecam">Facecam on top</button>
         </div>
         <div class="hint" id="layoutHint">You can switch layout and draw the facecam area after it downloads.</div>
+        <label for="picker">Pick moments with</label>
+        <select id="picker" class="select"></select>
+        <div class="hint" id="pickerHint"></div>
         <button class="btn full" id="submit" type="submit">Make clips</button>
         <div class="msg" id="formMsg"></div>
       </form>
@@ -144,7 +153,37 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const mmss = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, "0")}`;
 const STEPS = [["download","Download"],["audio","Loud moments"],["transcribe","Transcript"],
-               ["rank","Claude picks"],["plan","Cut points"],["render","Render"]];
+               ["rank","Pick moments"],["plan","Cut points"],["render","Render"]];
+const PICKER_NAMES = {auto: "Automatic", claude: "Claude", local: "Local AI", none: "No AI"};
+let pickers = {claude: false, local: false, none: true, auto_uses: "none"};
+
+function pickerOptions(selectedValue) {
+  const p = pickers;
+  const opt = (v, label, ok) => `<option value="${v}" ${v === selectedValue ? "selected" : ""} ${ok ? "" : "disabled"}>${label}</option>`;
+  return opt("auto", `Automatic (${PICKER_NAMES[p.auto_uses]})`, true)
+    + opt("claude", "Claude — best picks" + (p.claude ? "" : " (not installed)"), p.claude)
+    + opt("local", "Local AI — free, on this PC" + (p.local ? "" : " (not set up)"), p.local)
+    + opt("none", "No AI — loudness and reactions", true);
+}
+const PICKER_HINTS = {
+  auto: "Uses the best option set up on this PC.",
+  claude: "Uses one short request from your Claude plan per video.",
+  local: "Free and private. Takes a minute or two per video. Picks are less smart than Claude's.",
+  none: "Instant and free. Picks the loudest, most reactive stretches; titles come from what's said.",
+};
+async function refreshPickers() {
+  try { pickers = await api("/api/pickers"); } catch { return; }
+  const sel = $("#picker");
+  let want = sel.value || localStorage.getItem("picker") || pickers.default || "auto";
+  if (want !== "auto" && !pickers[want]) want = "auto";
+  sel.innerHTML = pickerOptions(want);
+  $("#pickerHint").textContent = PICKER_HINTS[sel.value] || "";
+  if (detail && detailKey() !== lastDetailKey) renderDetail();   // update the "Pick again" menu too
+}
+$("#picker").addEventListener("change", e => {
+  try { localStorage.setItem("picker", e.target.value); } catch {}
+  $("#pickerHint").textContent = PICKER_HINTS[e.target.value] || "";
+});
 let settings = {}, jobs = [], selected = null, detail = null, source = "url", layout = "center";
 let fcDraft = null, deleteArmed = false;
 
@@ -172,6 +211,7 @@ $("#form").addEventListener("submit", async e => {
   fd.append("creator", $("#creator").value);
   fd.append("permission", $("#permission").value);
   fd.append("layout", layout);
+  fd.append("picker", $("#picker").value || "auto");
   if (source === "url") fd.append("url", $("#url").value);
   else if ($("#file").files[0]) fd.append("file", $("#file").files[0]);
   $("#submit").disabled = true; $("#formMsg").className = "msg";
@@ -247,6 +287,15 @@ function renderDetail() {
           ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
         </div>
       </div>`).join("")}</div></div>` : ""}
+    ${v && !busy && ["rank", "plan", "render", "done"].includes(d.stage) ? `<div class="section"><h2>Moments</h2>
+      <div class="picked">
+        ${d.picked_by ? `<span>Picked by <strong style="color:var(--text)">${esc(PICKER_NAMES[d.picked_by] || d.picked_by)}</strong>.</span>` : ""}
+        <span>Pick again with</span>
+        <select class="select inline" id="repickSel">${pickerOptions(d.picked_by === "claude" ? (pickers.local ? "local" : "none") : (pickers.claude ? "claude" : "none"))}</select>
+        <button class="btn ghost" id="repick">Pick again</button>
+      </div>
+      <div class="hint">The download and transcript are reused, so only the picking and rendering run again.</div>
+    </div>` : ""}
     ${v ? `<div class="section"><h2>Layout</h2>
       <div class="seg" id="reLayout" style="max-width:360px">
         <button type="button" data-v="center" class="${(fcDraft?.layout || d.layout) === "center" ? "on" : ""}">Center crop</button>
@@ -269,6 +318,13 @@ function wireDetail() {
   const d = detail;
   $("#retry")?.addEventListener("click", async () => { await api(`/api/jobs/${d.id}/retry`, {method: "POST"}); refresh(); });
   $("#openFolder")?.addEventListener("click", () => api(`/api/jobs/${d.id}/open-folder`, {method: "POST"}));
+  $("#repick")?.addEventListener("click", async () => {
+    try {
+      await api(`/api/jobs/${d.id}/repick`, {method: "POST", headers: {"content-type": "application/json"},
+        body: JSON.stringify({picker: $("#repickSel").value})});
+      refresh();
+    } catch (e) { alertBox(e.message); }
+  });
   $("#del")?.addEventListener("click", async () => {
     if (!deleteArmed) { deleteArmed = true; renderDetail(); return; }
     try { await api(`/api/jobs/${d.id}`, {method: "DELETE"}); selected = null; detail = null; } catch (e) { alertBox(e.message); }
@@ -330,7 +386,7 @@ function alertBox(msg) {
 
 // Only redraw the detail panel when something changed, so playing videos aren't interrupted.
 let lastDetailKey = "";
-const detailKey = () => JSON.stringify([detail?.id, detail?.status, detail?.stage, detail?.progress,
+const detailKey = () => JSON.stringify([pickers, detail?.id, detail?.status, detail?.stage, detail?.progress, detail?.picked_by,
   detail?.progress_text, detail?.clips?.map(c => c.rendered_at), detail?.log?.length, detail?.layout,
   detail?.facecam, detail?.video, deleteArmed]);
 
@@ -346,14 +402,17 @@ async function refresh() {
 }
 
 // ---- setup checklist (shown until everything required is installed) ----
-let setupReady = true, setupKey = "";
+let setupReady = true, setupKey = "", setupOpen = false, setupBusy = false;
+$("#setupToggle").addEventListener("click", () => { setupOpen = !setupOpen; setupKey = ""; refreshSetup(); });
 async function refreshSetup() {
   let s;
   try { s = await api("/api/setup"); } catch { return; }
   setupReady = s.ready;
   const busy = s.items.some(i => i.job && i.job.state === "running");
-  const show = !s.ready || busy || s.items.some(i => !i.ok && i.action === "download");
-  const key = JSON.stringify(s);
+  if (setupBusy && !busy) refreshPickers();       // something just finished installing
+  setupBusy = busy;
+  const show = setupOpen || !s.ready || busy || s.items.some(i => !i.ok && i.action === "download" && i.required);
+  const key = JSON.stringify([s, show]);
   $("#submit").disabled = !s.ready;
   $("#submit").title = s.ready ? "" : "Finish the setup checklist first";
   if (key === setupKey) return;
@@ -362,14 +421,14 @@ async function refreshSetup() {
   el.hidden = !show;
   if (!show) return;
   el.innerHTML = `<h2>Setup</h2>
-    <p>${s.ready ? "Everything required is installed. Optional extra:" : "A few things are needed before the first video:"}</p>
+    <p>${s.ready ? "Everything required is installed. Optional extras below." : "A few things are needed before the first video:"}</p>
     ${s.items.filter(i => !(i.ok && !i.job)).concat(s.items.filter(i => i.ok && !i.job)).map(i => {
       const j = i.job, running = j && j.state === "running";
       let action = "";
       if (!i.ok && i.action === "download" && !running)
         action = `<button class="btn ghost" data-install="${i.id}">${j && j.state === "error" ? "Try again" : "Download"} (${esc(i.size)})</button>`;
       if (!i.ok && i.action === "link")
-        action = `<a href="${esc(i.link)}" target="_blank" rel="noopener">How to install</a>`;
+        action = `<a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.link_text || "How to install")}</a>`;
       return `<div class="req"><div class="icon ${i.ok ? "ok" : "no"}">${i.ok ? "✓" : "!"}</div><div style="flex:1">
         <div class="name">${esc(i.name)}${i.required ? "" : " <span class='hint'>(optional)</span>"}</div>
         ${i.help && !i.ok ? `<div class="sub">${esc(i.help)}</div>` : ""}
@@ -386,9 +445,18 @@ async function refreshSetup() {
 
 api("/api/settings").then(s => { settings = s; }).catch(() => {});
 refresh();
-refreshSetup();
+refreshPickers();
 setInterval(refresh, 1500);
-setInterval(refreshSetup, 2000);
+// Check the setup often while something installs or the panel is open, otherwise now and then.
+let lastSetupCheck = 0;
+(async function setupLoop() {
+  if (setupBusy || setupOpen || Date.now() - lastSetupCheck > 15000) {
+    lastSetupCheck = Date.now();
+    await refreshSetup();
+  }
+  setTimeout(setupLoop, 2000);
+})();
+setInterval(refreshPickers, 30000);
 </script>
 </body>
 </html>

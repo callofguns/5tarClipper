@@ -85,7 +85,7 @@ class JobStore:
                 "created_at": datetime.now().isoformat(timespec="seconds"),
                 "source": source, "title": title, "uploader": "",
                 "creator": creator, "permission": permission,
-                "layout": layout, "facecam": facecam,
+                "layout": layout, "facecam": facecam, "picker": "auto", "picked_by": None,
                 "status": "queued", "stage": None, "stage_label": "Waiting in line",
                 "progress": None, "progress_text": "", "error": None,
                 "log": [], "clips": [], "plan": [], "loud": [], "video": None}

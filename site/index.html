@@ -65,6 +65,7 @@
   @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
   .card h3 { margin: 0 0 8px; font-size: 17px; }
+  #pickers .card p { margin: 0; }
   .card p, .card li { color: var(--muted); font-size: 15px; }
   .card ol, .card ul { padding-left: 20px; margin: 8px 0 0; }
   .card li { margin: 4px 0; }
@@ -89,7 +90,7 @@
 
   <header class="hero">
     <h1>Turn long <span class="grad">GTA VI</span> videos<br>into vertical clips</h1>
-    <p class="lead">Paste a YouTube or Twitch VOD link. GTA VI Clipper finds the funniest, loudest and most chaotic moments, then cuts them into 1080x1920 clips with big captions, ready for Shorts, TikTok or Reels.</p>
+    <p class="lead">Paste a YouTube or Twitch VOD link. GTA VI Clipper finds the funniest, loudest and most chaotic moments, then cuts them into 1080x1920 clips with big captions, ready for Shorts, TikTok or Reels. Works out of the box; add Claude or a free local AI for smarter picks.</p>
     <a class="cta" href="https://github.com/callofguns/gta6-clipper/releases/latest/download/GTA6-Clipper-Setup.exe">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
       Download for Windows
@@ -107,7 +108,7 @@
       <div class="step"><h3>Download</h3><p>Paste a YouTube or Twitch VOD link, or upload a video file from your PC.</p></div>
       <div class="step"><h3>Loud moments</h3><p>Finds explosions, crashes and screaming, because big action doesn't always show up in a transcript.</p></div>
       <div class="step"><h3>Transcript</h3><p>Writes down every spoken word with its exact time, using your graphics card when it can.</p></div>
-      <div class="step"><h3>Claude picks</h3><p>Claude reads the transcript and loud moments and picks the best 20–60 second moments, each with a title and a reason.</p></div>
+      <div class="step"><h3>Pick moments</h3><p>Claude, a free AI model running on your PC, or a no-AI scorer picks the best 20–60 second moments, each with a title and a reason.</p></div>
       <div class="step"><h3>Clean cuts</h3><p>Moves every start and end so no sentence or action gets cut off halfway.</p></div>
       <div class="step"><h3>Render</h3><p>Makes 1080x1920 clips with large, readable captions that appear as the words are spoken.</p></div>
     </div>
@@ -138,6 +139,16 @@
     </div>
   </section>
 
+  <section id="pickers">
+    <h2>Three ways to pick moments</h2>
+    <p class="section-lead">Choose per video. <strong>Automatic</strong> uses the best one set up on your PC. If Claude isn't available, it falls back on its own.</p>
+    <div class="steps" style="counter-reset:none">
+      <div class="card"><h3>Claude <span class="tag">best</span></h3><p>Understands what's happening, like a setup and its payoff, a fail or a funny line, and writes real titles. Needs <a href="https://code.claude.com/docs/en/quickstart">Claude Code</a> and a Claude plan; each video uses one short request from your plan's normal usage limits.</p></div>
+      <div class="card"><h3>Local AI <span class="tag">free</span></h3><p>An AI model running privately on your own PC through <a href="https://ollama.com">Ollama</a>. Nothing leaves your computer. One-time download of about 5 GB. Smart, but less so than Claude.</p></div>
+      <div class="card"><h3>No AI <span class="tag">instant</span></h3><p>Scores every stretch of the video by loudness, reactions like “no way” or laughing, and talking speed. Works straight after install, with no account and no download.</p></div>
+    </div>
+  </section>
+
   <section id="install">
     <h2>Install</h2>
     <p class="section-lead">The installer is small. The app downloads its larger parts the first time you open it, from a checklist with one-click buttons.</p>
@@ -146,16 +157,16 @@
         <h3>What you need</h3>
         <ul>
           <li>Windows, 64-bit (built and tested on Windows 11)</li>
-          <li><a href="https://code.claude.com/docs/en/quickstart">Claude Code</a>, logged in with a Claude plan that includes it. Each video uses one short request from your plan's normal usage limits.</li>
+          <li>Optional, for smarter picks: <a href="https://code.claude.com/docs/en/quickstart">Claude Code</a> with a Claude plan, or <a href="https://ollama.com">Ollama</a> for the free local AI. Without either, the No AI picker is used.</li>
           <li>An NVIDIA graphics card <span class="tag">optional</span>, for much faster transcription. Without one the CPU is used.</li>
-          <li>About 4 GB of free space for the app, tools and speech model</li>
+          <li>About 4 GB of free space for the app, tools and speech model (plus about 5 GB for the optional local AI)</li>
         </ul>
       </div>
       <div class="card">
         <h3>Steps</h3>
         <ol>
           <li>Download and run <code>GTA6-Clipper-Setup.exe</code>. No admin rights needed.</li>
-          <li>The app opens in your browser. Follow the <strong>Setup</strong> checklist: FFmpeg, a YouTube helper and, optionally, the GPU files.</li>
+          <li>The app opens in your browser. Follow the <strong>Setup</strong> checklist: FFmpeg, a YouTube helper and, optionally, the GPU files and the local AI model.</li>
           <li>Paste a link, fill in the creator and permission, press <strong>Make clips</strong>.</li>
           <li>The app keeps running in the system tray. Right-click its icon to open it again or quit.</li>
         </ol>

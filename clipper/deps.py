@@ -55,16 +55,37 @@ def nvidia_gpu_present() -> bool:
         return False
 
 
+_claude_cache: tuple[float, str | None] = (0.0, None)
+
+
 def claude_version() -> str | None:
+    global _claude_cache
+    import time
+    if time.time() - _claude_cache[0] < 60:        # checked recently
+        return _claude_cache[1]
     path = find_program("claude", required=False)
-    if not path:
-        return None
-    try:
-        out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=20,
-                             stdin=subprocess.DEVNULL, **NO_WINDOW)
-        return out.stdout.strip() or "installed"
-    except Exception:
-        return "installed"
+    version = None
+    if path:
+        try:
+            out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=20,
+                                 stdin=subprocess.DEVNULL, **NO_WINDOW)
+            version = out.stdout.strip() or "installed"
+        except Exception:
+            version = "installed"
+    _claude_cache = (time.time(), version)
+    return version
+
+
+def _local_ai_item() -> dict:
+    from clipper.config import load_config
+    from clipper.video import local_ai
+    model = load_config()["video"]["local_model"]
+    item = {"id": "localai", "name": f"Local AI model ({model}, free, runs on this PC)", "required": False}
+    if not local_ai.server_running():
+        return {**item, "ok": False, "action": "link", "link": "https://ollama.com/download",
+                "link_text": "Install Ollama",
+                "help": "Free alternative to Claude. Install Ollama, then come back here to download the model."}
+    return {**item, "ok": local_ai.model_ready(model), "action": "download", "size": "about 5 GB"}
 
 
 def status() -> dict:
@@ -76,10 +97,12 @@ def status() -> dict:
         {"id": "deno", "name": "JavaScript runtime (needed for YouTube links)", "required": True,
          "ok": bool(find_program("deno", False) or find_program("node", False)),
          "action": "download", "size": "about 45 MB"},
-        {"id": "claude", "name": "Claude Code, logged in (picks the best moments)", "required": True,
+        {"id": "claude", "name": "Claude Code (best moment picks)", "required": False,
          "ok": claude_version() is not None, "action": "link",
-         "link": "https://code.claude.com/docs/en/quickstart",
-         "help": "Install Claude Code, run 'claude' once in a terminal to log in, then restart this app."},
+         "link": "https://code.claude.com/docs/en/quickstart", "link_text": "How to install",
+         "help": "Needs a Claude plan. Install Claude Code, run 'claude' once in a terminal to log in, "
+                 "then restart this app. Without it, Local AI or No AI picks the moments."},
+        _local_ai_item(),
         {"id": "gpu", "name": "NVIDIA GPU files (much faster transcription)", "required": False,
          "ok": gpu_files_present(), "action": "download" if has_gpu else "none", "size": "about 1.3 GB",
          "help": None if has_gpu else "No NVIDIA graphics card found, so transcription will use the CPU (slower, still works)."},
@@ -92,7 +115,8 @@ def status() -> dict:
 
 # ---------------------------------------------------------------- downloads
 def start_install(name: str) -> None:
-    funcs = {"ffmpeg": _install_ffmpeg, "deno": _install_deno, "gpu": _install_gpu}
+    funcs = {"ffmpeg": _install_ffmpeg, "deno": _install_deno, "gpu": _install_gpu,
+             "localai": _install_local_model}
     if name not in funcs:
         raise ValueError("Unknown item")
     with _lock:
@@ -171,6 +195,13 @@ def _install_deno(name):
         with zipfile.ZipFile(z) as zf:
             with zf.open("deno.exe") as src, (target / "deno.exe").open("wb") as dst:
                 shutil.copyfileobj(src, dst)
+
+
+def _install_local_model(name):
+    from clipper.config import load_config
+    from clipper.video import local_ai
+    model = load_config()["video"]["local_model"]
+    local_ai.pull(model, lambda frac, text: _set(name, progress=frac, text=text))
 
 
 def _install_gpu(name):
