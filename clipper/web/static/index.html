@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GTA VI Clipper</title>
+<link rel="icon" href="/favicon.png">
+<style>
+  :root {
+    --bg: #0e0f13; --panel: #171920; --panel-2: #1e2129; --line: #2a2e39;
+    --text: #e9ebf1; --muted: #9399a8; --accent: #ff4fa3; --accent-2: #ffb340;
+    --ok: #3ddc97; --err: #ff6b6b; --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 24px; border-bottom: 1px solid var(--line);
+           display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .3px; }
+  header h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2));
+                   -webkit-background-clip: text; background-clip: text; color: transparent; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  main { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px 24px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 5px; }
+  input, textarea { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+                    border-radius: 8px; padding: 9px 11px; font: inherit; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  textarea { resize: vertical; min-height: 64px; }
+  .seg { display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+  .seg button { flex: 1; background: none; border: 0; color: var(--muted); padding: 7px; border-radius: 6px; cursor: pointer; font: inherit; }
+  .seg button.on { background: var(--line); color: var(--text); }
+  .btn { background: linear-gradient(90deg, var(--accent), #ff7a59); color: #fff; border: 0; border-radius: 8px;
+         padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.ghost { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-weight: 500; }
+  .btn.danger { background: transparent; border: 1px solid var(--err); color: var(--err); font-weight: 500; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .full { width: 100%; margin-top: 16px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .msg { margin-top: 10px; font-size: 13px; }
+  .msg.err { color: var(--err); }
+  .jobs { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .job { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .job.sel { border-color: var(--accent); }
+  .job .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job .s { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-top: 3px; }
+  .pill { font-size: 11px; padding: 1px 8px; border-radius: 99px; background: var(--line); color: var(--text); }
+  .pill.done { background: rgba(61,220,151,.15); color: var(--ok); }
+  .pill.error { background: rgba(255,107,107,.15); color: var(--err); }
+  .pill.running { background: rgba(255,79,163,.15); color: var(--accent); }
+  .bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s; }
+  .bar.indet > div { width: 30% !important; animation: slide 1.2s infinite ease-in-out; }
+  @keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
+  .empty { color: var(--muted); text-align: center; padding: 60px 20px; }
+  .detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .detail-head h3 { margin: 0; font-size: 19px; }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 4px; word-break: break-all; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 18px 0 6px; }
+  .step { font-size: 12px; color: var(--muted); border-top: 3px solid var(--line); padding-top: 6px; }
+  .step.done { color: var(--text); border-color: var(--ok); }
+  .step.now { color: var(--text); border-color: var(--accent); }
+  @media (max-width: 600px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+  .error-box { background: rgba(255,107,107,.08); border: 1px solid rgba(255,107,107,.4); color: #ffd0d0;
+               padding: 12px; border-radius: 8px; margin-top: 14px; white-space: pre-wrap; }
+  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; margin-top: 16px; }
+  .clip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .clip video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; }
+  .clip .body { padding: 10px 12px; }
+  .clip .title { font-weight: 600; }
+  .clip .why { font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
+  .clip .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); align-items: center; }
+  .clip a { color: var(--accent-2); text-decoration: none; }
+  .section { margin-top: 24px; }
+  .fc-wrap { position: relative; display: inline-block; max-width: 100%; user-select: none; cursor: crosshair; }
+  .fc-wrap img { display: block; max-width: 100%; border-radius: 8px; }
+  .fc-box { position: absolute; border: 3px solid var(--accent); background: rgba(255,79,163,.15); pointer-events: none; }
+  .fc-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-top: 10px; }
+  .fc-controls input { width: 190px; }
+  .setup { margin-bottom: 16px; border-color: var(--accent-2); }
+  .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .req { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .req:first-of-type { border-top: 0; }
+  .req .icon { width: 20px; flex: none; text-align: center; font-weight: 700; }
+  .req .icon.ok { color: var(--ok); } .req .icon.no { color: var(--accent-2); }
+  .req .name { font-size: 14px; }
+  .req .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .req .btn { padding: 5px 10px; font-size: 13px; margin-top: 6px; }
+  .req a { color: var(--accent-2); }
+  details.log { margin-top: 24px; }
+  details.log summary { cursor: pointer; color: var(--muted); }
+  details.log pre { background: #0a0b0e; border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+                    font-size: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>GTA VI</span> Clipper</h1>
+  <p>Runs on this PC · clips are saved for you to review · nothing is ever posted</p>
+</header>
+<main>
+  <section>
+    <div class="panel setup" id="setup" hidden></div>
+    <div class="panel">
+      <h2>New video</h2>
+      <form id="form">
+        <div class="seg" id="srcSeg">
+          <button type="button" data-v="url" class="on">Paste link</button>
+          <button type="button" data-v="file">Upload file</button>
+        </div>
+        <div id="urlBox">
+          <label for="url">YouTube or Twitch VOD link</label>
+          <input id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+        </div>
+        <div id="fileBox" hidden>
+          <label for="file">Video file</label>
+          <input id="file" name="file" type="file" accept=".mp4,.mkv,.mov,.webm,.avi">
+        </div>
+        <label for="creator">Creator's name</label>
+        <input id="creator" name="creator" required>
+        <label for="permission">Permission you have to use it</label>
+        <textarea id="permission" name="permission" required
+          placeholder="e.g. Creator emailed OK on 2026-11-20 to make Shorts from this video"></textarea>
+        <label>Layout</label>
+        <div class="seg" id="layoutSeg">
+          <button type="button" data-v="center" class="on">Center crop</button>
+          <button type="button" data-v="facecam">Facecam on top</button>
+        </div>
+        <div class="hint" id="layoutHint">You can switch layout and draw the facecam area after it downloads.</div>
+        <button class="btn full" id="submit" type="submit">Make clips</button>
+        <div class="msg" id="formMsg"></div>
+      </form>
+    </div>
+    <div class="jobs" id="jobs"></div>
+  </section>
+  <section class="panel" id="detail"><div class="empty">Paste a link to get started.<br>Your videos and clips will show up here.</div></section>
+</main>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const mmss = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, "0")}`;
+const STEPS = [["download","Download"],["audio","Loud moments"],["transcribe","Transcript"],
+               ["rank","Claude picks"],["plan","Cut points"],["render","Render"]];
+let settings = {}, jobs = [], selected = null, detail = null, source = "url", layout = "center";
+let fcDraft = null, deleteArmed = false;
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({"x-clipper": "1"}, opts.headers || {});
+  const r = await fetch(path, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(typeof body.detail === "string" ? body.detail : r.statusText);
+  return body;
+}
+
+function segment(el, onPick) {
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    onPick(b.dataset.v);
+  });
+}
+segment($("#srcSeg"), v => { source = v; $("#urlBox").hidden = v !== "url"; $("#fileBox").hidden = v !== "file"; });
+segment($("#layoutSeg"), v => { layout = v; });
+
+$("#form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append("creator", $("#creator").value);
+  fd.append("permission", $("#permission").value);
+  fd.append("layout", layout);
+  if (source === "url") fd.append("url", $("#url").value);
+  else if ($("#file").files[0]) fd.append("file", $("#file").files[0]);
+  $("#submit").disabled = true; $("#formMsg").className = "msg";
+  $("#formMsg").textContent = source === "file" ? "Uploading..." : "";
+  try {
+    const job = await api("/api/jobs", {method: "POST", body: fd});
+    $("#url").value = ""; $("#file").value = ""; $("#formMsg").textContent = "Added!";
+    selected = job.id; await refresh();
+  } catch (err) { $("#formMsg").className = "msg err"; $("#formMsg").textContent = err.message; }
+  $("#submit").disabled = false;
+});
+
+function statusPill(j) {
+  const label = {queued: "waiting", running: "working", done: "done", error: "needs attention"}[j.status] || j.status;
+  return `<span class="pill ${j.status}">${label}</span>`;
+}
+function progressBar(j) {
+  if (j.status !== "running") return "";
+  const indet = j.progress == null;
+  return `<div class="bar ${indet ? "indet" : ""}"><div style="width:${(j.progress || 0) * 100}%"></div></div>`;
+}
+
+function renderJobs() {
+  $("#jobs").innerHTML = jobs.map(j => `
+    <div class="job ${j.id === selected ? "sel" : ""}" data-id="${j.id}">
+      <div class="t">${esc(j.title || j.source.url || j.source.filename)}</div>
+      <div class="s">${statusPill(j)} <span>${esc(j.status === "done" ? j.clip_count + " clips" : j.stage_label || "")}</span></div>
+      ${progressBar(j)}
+    </div>`).join("");
+}
+$("#jobs").addEventListener("click", e => {
+  const el = e.target.closest(".job"); if (!el) return;
+  selected = el.dataset.id; fcDraft = null; deleteArmed = false; refresh();
+});
+
+function renderDetail() {
+  lastDetailKey = detailKey();
+  const d = detail, el = $("#detail");
+  if (!d) { el.innerHTML = `<div class="empty">Paste a link to get started.<br>Your videos and clips will show up here.</div>`; return; }
+  const idx = STEPS.findIndex(s => s[0] === d.stage);
+  const steps = STEPS.map(([k, label], i) => {
+    const cls = d.status === "done" || i < idx ? "done" : i === idx && d.status === "running" ? "now" : "";
+    return `<div class="step ${cls}">${label}</div>`;
+  }).join("");
+  const busy = d.status === "queued" || d.status === "running";
+  const src = d.source.url ? `<a href="${esc(d.source.url)}" target="_blank" rel="noopener" style="color:inherit">${esc(d.source.url)}</a>` : esc(d.source.filename);
+  const v = d.video;
+  el.innerHTML = `
+    <div class="detail-head">
+      <div>
+        <h3>${esc(d.title || "Video")}</h3>
+        <div class="meta">${src}${v ? ` · ${v.width}x${v.height} · ${mmss(v.duration)}` : ""}</div>
+        <div class="meta">Creator: ${esc(d.creator)} · Permission: ${esc(d.permission)}</div>
+      </div>
+      <div class="actions">
+        ${d.status === "error" ? `<button class="btn" id="retry">Retry</button>` : ""}
+        ${d.clips.length ? `<button class="btn ghost" id="openFolder">Open folder</button>` : ""}
+        <button class="btn danger" id="del" ${busy ? "disabled" : ""}>${deleteArmed ? "Click again to delete" : "Delete"}</button>
+      </div>
+    </div>
+    <div class="steps">${steps}</div>
+    ${d.status === "running" ? `<div class="meta">${esc(d.stage_label)}${d.progress_text ? " — " + esc(d.progress_text) : ""}</div>${progressBar(d)}` : ""}
+    ${d.status === "queued" ? `<div class="meta">Waiting for the video before it to finish.</div>` : ""}
+    ${d.status === "error" ? `<div class="error-box">${esc(d.error)}</div>` : ""}
+    ${d.clips.length ? `<div class="section"><h2>Clips to review (${d.clips.length})</h2><div class="clips">${d.clips.map(c => `
+      <div class="clip">
+        <video controls preload="metadata" src="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}?v=${encodeURIComponent(c.rendered_at)}"></video>
+        <div class="body">
+          <div class="title">${esc(c.title)}</div>
+          <div class="why">${esc(c.reason)}</div>
+          <div class="row"><span>${mmss(c.start)}–${mmss(c.end)} · ${(c.end - c.start).toFixed(0)}s · ${c.score}/10</span>
+            <a href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}">Download</a></div>
+          ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
+        </div>
+      </div>`).join("")}</div></div>` : ""}
+    ${v ? `<div class="section"><h2>Layout</h2>
+      <div class="seg" id="reLayout" style="max-width:360px">
+        <button type="button" data-v="center" class="${(fcDraft?.layout || d.layout) === "center" ? "on" : ""}">Center crop</button>
+        <button type="button" data-v="facecam" class="${(fcDraft?.layout || d.layout) === "facecam" ? "on" : ""}">Facecam on top</button>
+      </div>
+      <div id="fcArea" ${(fcDraft?.layout || d.layout) === "facecam" ? "" : "hidden"}>
+        <div class="hint" style="margin:10px 0">Drag a box around the facecam on this frame.</div>
+        <div class="fc-wrap" id="fcWrap"><img id="fcImg" src="/api/jobs/${d.id}/frame.jpg" alt="Frame from the video" draggable="false"><div class="fc-box" id="fcBox"></div></div>
+        <div class="fc-controls"><div><label for="fcText">Facecam area (x, y, width, height)</label>
+          <input id="fcText" value="${esc((fcDraft?.facecam || d.facecam).join(", "))}"></div></div>
+      </div>
+      <button class="btn ghost" id="rerender" style="margin-top:12px" ${busy || !(d.plan && d.plan.length) ? "disabled" : ""}>Re-render clips with this layout</button>
+      ${!(d.plan && d.plan.length) ? `<div class="hint">Available once Claude has picked the moments.</div>` : ""}
+    </div>` : ""}
+    <details class="log"><summary>Activity log</summary><pre>${esc((d.log || []).map(l => `[${l.t}] ${l.msg}`).join("\n"))}</pre></details>`;
+  wireDetail();
+}
+
+function wireDetail() {
+  const d = detail;
+  $("#retry")?.addEventListener("click", async () => { await api(`/api/jobs/${d.id}/retry`, {method: "POST"}); refresh(); });
+  $("#openFolder")?.addEventListener("click", () => api(`/api/jobs/${d.id}/open-folder`, {method: "POST"}));
+  $("#del")?.addEventListener("click", async () => {
+    if (!deleteArmed) { deleteArmed = true; renderDetail(); return; }
+    try { await api(`/api/jobs/${d.id}`, {method: "DELETE"}); selected = null; detail = null; } catch (e) { alertBox(e.message); }
+    deleteArmed = false; refresh();
+  });
+  const layoutEl = $("#reLayout");
+  if (layoutEl) segment(layoutEl, v => {
+    fcDraft = {layout: v, facecam: fcDraft?.facecam || d.facecam};
+    $("#fcArea").hidden = v !== "facecam"; drawBox();
+  });
+  $("#rerender")?.addEventListener("click", async () => {
+    const lay = fcDraft?.layout || d.layout;
+    try {
+      await api(`/api/jobs/${d.id}/rerender`, {method: "POST", headers: {"content-type": "application/json"},
+        body: JSON.stringify({layout: lay, facecam: $("#fcText")?.value || ""})});
+      fcDraft = null; refresh();
+    } catch (e) { alertBox(e.message); }
+  });
+  const img = $("#fcImg");
+  if (!img) return;
+  img.addEventListener("load", drawBox);
+  if (img.complete) drawBox();
+  $("#fcText").addEventListener("input", () => {
+    const n = $("#fcText").value.split(",").map(s => parseInt(s.trim(), 10));
+    if (n.length === 4 && n.every(x => x >= 0)) { fcDraft = {layout: fcDraft?.layout || d.layout, facecam: n}; drawBox(); }
+  });
+  let startPt = null;
+  const toVideo = e => {
+    const r = img.getBoundingClientRect();
+    const sx = d.video.width / r.width, sy = d.video.height / r.height;
+    return [Math.max(0, Math.min(d.video.width, (e.clientX - r.left) * sx)),
+            Math.max(0, Math.min(d.video.height, (e.clientY - r.top) * sy))];
+  };
+  $("#fcWrap").addEventListener("pointerdown", e => { startPt = toVideo(e); e.currentTarget.setPointerCapture(e.pointerId); });
+  $("#fcWrap").addEventListener("pointermove", e => {
+    if (!startPt) return;
+    const p = toVideo(e);
+    const box = [Math.min(startPt[0], p[0]), Math.min(startPt[1], p[1]), Math.abs(p[0] - startPt[0]), Math.abs(p[1] - startPt[1])].map(Math.round);
+    if (box[2] < 8 || box[3] < 8) return;
+    fcDraft = {layout: "facecam", facecam: box};
+    $("#fcText").value = box.join(", "); drawBox();
+  });
+  $("#fcWrap").addEventListener("pointerup", () => { startPt = null; });
+}
+
+function drawBox() {
+  const img = $("#fcImg"), box = $("#fcBox");
+  if (!img || !box || !detail?.video || !img.clientWidth) return;
+  const [x, y, w, h] = fcDraft?.facecam || detail.facecam;
+  const s = img.clientWidth / detail.video.width;
+  Object.assign(box.style, {left: x * s + "px", top: y * s + "px", width: w * s + "px", height: h * s + "px"});
+}
+window.addEventListener("resize", drawBox);
+
+function alertBox(msg) {
+  const el = document.createElement("div"); el.className = "error-box"; el.textContent = msg;
+  $("#detail").prepend(el); setTimeout(() => el.remove(), 6000);
+}
+
+// Only redraw the detail panel when something changed, so playing videos aren't interrupted.
+let lastDetailKey = "";
+const detailKey = () => JSON.stringify([detail?.id, detail?.status, detail?.stage, detail?.progress,
+  detail?.progress_text, detail?.clips?.map(c => c.rendered_at), detail?.log?.length, detail?.layout,
+  detail?.facecam, detail?.video, deleteArmed]);
+
+async function refresh() {
+  try {
+    jobs = await api("/api/jobs");
+    if (selected && !jobs.some(j => j.id === selected)) selected = null;
+    if (!selected && jobs.length) selected = jobs[0].id;
+    renderJobs();
+    detail = selected ? await api(`/api/jobs/${selected}`).catch(() => null) : null;
+    if (detailKey() !== lastDetailKey) { lastDetailKey = detailKey(); renderDetail(); }
+  } catch (e) { /* server restarting: try again on the next tick */ }
+}
+
+// ---- setup checklist (shown until everything required is installed) ----
+let setupReady = true, setupKey = "";
+async function refreshSetup() {
+  let s;
+  try { s = await api("/api/setup"); } catch { return; }
+  setupReady = s.ready;
+  const busy = s.items.some(i => i.job && i.job.state === "running");
+  const show = !s.ready || busy || s.items.some(i => !i.ok && i.action === "download");
+  const key = JSON.stringify(s);
+  $("#submit").disabled = !s.ready;
+  $("#submit").title = s.ready ? "" : "Finish the setup checklist first";
+  if (key === setupKey) return;
+  setupKey = key;
+  const el = $("#setup");
+  el.hidden = !show;
+  if (!show) return;
+  el.innerHTML = `<h2>Setup</h2>
+    <p>${s.ready ? "Everything required is installed. Optional extra:" : "A few things are needed before the first video:"}</p>
+    ${s.items.filter(i => !(i.ok && !i.job)).concat(s.items.filter(i => i.ok && !i.job)).map(i => {
+      const j = i.job, running = j && j.state === "running";
+      let action = "";
+      if (!i.ok && i.action === "download" && !running)
+        action = `<button class="btn ghost" data-install="${i.id}">${j && j.state === "error" ? "Try again" : "Download"} (${esc(i.size)})</button>`;
+      if (!i.ok && i.action === "link")
+        action = `<a href="${esc(i.link)}" target="_blank" rel="noopener">How to install</a>`;
+      return `<div class="req"><div class="icon ${i.ok ? "ok" : "no"}">${i.ok ? "✓" : "!"}</div><div style="flex:1">
+        <div class="name">${esc(i.name)}${i.required ? "" : " <span class='hint'>(optional)</span>"}</div>
+        ${i.help && !i.ok ? `<div class="sub">${esc(i.help)}</div>` : ""}
+        ${running ? `<div class="sub">${esc(j.text)}</div><div class="bar"><div style="width:${(j.progress || 0) * 100}%"></div></div>` : ""}
+        ${j && j.state === "error" ? `<div class="sub" style="color:var(--err)">${esc(j.text)}</div>` : ""}
+        ${action}</div></div>`;
+    }).join("")}`;
+  el.querySelectorAll("[data-install]").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true;
+    await api(`/api/setup/${b.dataset.install}/install`, {method: "POST"}).catch(e => alertBox(e.message));
+    refreshSetup();
+  }));
+}
+
+api("/api/settings").then(s => { settings = s; }).catch(() => {});
+refresh();
+refreshSetup();
+setInterval(refresh, 1500);
+setInterval(refreshSetup, 2000);
+</script>
+</body>
+</html>

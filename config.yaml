@@ -1,0 +1,87 @@
+# GTA VI Clipper settings. No secrets in here (those go in .env).
+# Lines starting with # are comments.
+
+# ---------------------------------------------------------------
+# WEB APP  (python -m clipper web)
+# ---------------------------------------------------------------
+web:
+  port: 8765
+
+# ---------------------------------------------------------------
+# VIDEO MODE (used by the web app)
+# ---------------------------------------------------------------
+video:
+  # Where finished clips are saved. Leave empty for the default
+  # (output/review when run from the code, Videos\GTA6 Clipper in the installed app).
+  output_folder:
+
+  # Transcription (faster-whisper). "large-v3-turbo" is fast and accurate on an RTX 3070.
+  whisper_model: large-v3-turbo
+  whisper_device: auto          # "auto" = graphics card if possible, "cuda" = graphics card, "cpu" = slower
+  whisper_compute_type: auto    # "auto" picks float16 on a graphics card, int8 on the CPU
+  language: en                  # set to null to auto-detect
+
+  # Loud moments: a sound this many dB above the video's typical level counts as "loud".
+  loud_db_above_median: 10
+  loud_min_seconds: 1.0
+
+  # Moment picking with Claude Code (claude -p). Uses your Claude plan's usage limits.
+  claude_model: sonnet
+  max_clips: 5
+  min_clip_seconds: 20
+  max_clip_seconds: 60
+
+  # Default layout for new videos: "center" (center crop) or "facecam" (facecam on top, gameplay below).
+  # You can change it per video in the web app.
+  layout: center
+  # Starting facecam area in the ORIGINAL video, in pixels: x, y, width, height (from the top-left).
+  # In the web app you can drag a box on a frame of each video instead.
+  facecam: [1440, 780, 480, 300]
+
+  # Captions
+  caption_font: Arial
+  caption_size: 84
+  caption_words_per_line: 3
+
+# ---------------------------------------------------------------
+# TWITCH LIVE MODE  (python -m clipper live --test)
+# ---------------------------------------------------------------
+twitch:
+  # Twitch usernames to watch (lowercase is fine).
+  channels:
+    - example_channel_1
+    - example_channel_2
+
+  category_name: Grand Theft Auto VI
+  check_live_every_seconds: 60
+
+  # Chat spike trigger ("Balanced")
+  window_seconds: 10            # look at the last 10 seconds of chat...
+  baseline_seconds: 300         # ...compared with the normal speed over the last 5 minutes
+  warmup_seconds: 120           # don't trigger until we have 2 minutes of chat history
+  spike_multiplier: 3.0         # last 10s must be at least 3x normal
+  min_unique_chatters: 5        # and at least 5 different people chatting
+  min_baseline_score: 2.0       # treat very quiet chats as at least this busy
+  max_points_per_chatter: 3     # one person can add at most this much per 10s window
+  cooldown_seconds: 90          # wait this long before clipping the same channel again
+
+  # Extra points for reactions (matched as whole words, any capitals)
+  reactions:
+    LUL: 1
+    KEKW: 1
+    OMG: 1
+    W: 1
+    "CLIP IT": 1
+    "no way": 1
+  max_reaction_points_per_message: 2
+
+  # Accounts to ignore (chat bots)
+  ignore_chatters:
+    - nightbot
+    - streamelements
+    - moobot
+    - fossabot
+    - streamlabs
+
+  # Clip length in seconds (Twitch allows 5-60, default 30)
+  clip_duration: 30

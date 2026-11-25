@@ -1,0 +1,53 @@
+# Builds the Windows installer and attaches it to a GitHub release when a version tag is pushed.
+#   git tag v0.1-Beta && git push origin v0.1-Beta
+name: Windows release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install libraries (without the large NVIDIA GPU files, which the app downloads itself)
+        shell: bash
+        run: |
+          grep -v "^nvidia-" requirements.txt > requirements-build.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-build.txt pyinstaller pystray pillow
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build the app with PyInstaller
+        run: python -m PyInstaller packaging/gta6clipper.spec --noconfirm --clean
+
+      - name: Build the installer with Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & $iscc "/DAppVersion=$version" packaging/installer.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-FileHash dist/GTA6-Clipper-Setup.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  GTA6-Clipper-Setup.exe" } | Out-File -Encoding ascii dist/GTA6-Clipper-Setup.exe.sha256
+
+      - name: Create the GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/GTA6-Clipper-Setup.exe dist/GTA6-Clipper-Setup.exe.sha256 \
+            --title "GTA VI Clipper ${{ github.ref_name }}" \
+            --notes-file packaging/release-notes.md \
+            $([[ "${{ github.ref_name }}" == *-* ]] && echo "--prerelease")

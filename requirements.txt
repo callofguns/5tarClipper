@@ -1,0 +1,22 @@
+# Video mode
+faster-whisper==1.2.1
+nvidia-cublas-cu12
+nvidia-cudnn-cu12==9.*
+numpy
+
+# Web app + downloading links (YouTube needs Node.js or Deno installed)
+fastapi
+uvicorn[standard]
+python-multipart
+yt-dlp[default]
+
+# Shared
+pyyaml
+python-dotenv
+
+# Twitch live mode
+httpx
+websockets
+
+# Tests
+pytest

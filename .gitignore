@@ -1,0 +1,21 @@
+# Secrets: never commit these
+.env
+*.token
+tokens.json
+
+# Build output (the installer is attached to GitHub releases instead)
+build/
+dist/
+requirements-build.txt
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Your videos, generated clips, logs and caches (large / private)
+input/
+output/
+logs/
+cache/
