@@ -16,6 +16,8 @@ datas += collect_data_files("yt_dlp_ejs")          # YouTube helper scripts
 datas += collect_data_files("webview")             # the app window (Edge WebView2 bridge files)
 binaries = collect_dynamic_libs("ctranslate2") + collect_dynamic_libs("webview")
 hiddenimports = (collect_submodules("uvicorn") + collect_submodules("yt_dlp")
+                 + collect_submodules("websockets")      # live mode's chat connection (imported lazily)
+                 + collect_submodules("clipper")
                  + ["webview.platforms.edgechromium", "webview.platforms.winforms", "clr", "multipart"])
 
 a = Analysis(

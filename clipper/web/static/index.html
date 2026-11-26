@@ -205,6 +205,35 @@
   .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 8px 0 0; font-weight: 400; font-size: 13.5px; }
   .switch input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 
+  /* ---------- Live (Twitch) ---------- */
+  .live-nav .t { display: flex; align-items: center; gap: 8px; }
+  .dot.live { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .live { max-width: 760px; }
+  .live .card { margin-top: 18px; }
+  .live .card h2 { margin-bottom: 6px; }
+  .live p { margin: 0 0 8px; color: var(--text-2); font-size: 13.5px; }
+  .live ol { margin: 8px 0 4px; padding-left: 20px; color: var(--text-2); font-size: 13.5px; }
+  .live ol li { margin: 4px 0; } .live ol strong { color: var(--text); font-weight: 600; }
+  .live .card a:not(.btn) { color: var(--accent); font-weight: 600; }
+  .inline-form { display: flex; gap: 8px; margin-top: 12px; }
+  .inline-form input { flex: 1; min-width: 0; }
+  .test-note { margin-top: 14px; font-size: 13px; color: var(--text-2); display: flex; gap: 8px; align-items: baseline; }
+  .pill { font-size: 11.5px; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--surface-2);
+          color: var(--text-2); border: 1px solid var(--line); white-space: nowrap; }
+  .pill.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .code { font: 650 26px/1.2 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 3px; margin: 6px 0 12px; }
+  .chan { display: flex; gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+  .chan:first-child { border-top: 0; }
+  .chan .who { flex: 1; min-width: 0; }
+  .live .card .chan .name { color: var(--text); font-weight: 600; text-decoration: none; }
+  .chan .name:hover { text-decoration: underline; }
+  .chan .sub { font-size: 12.5px; color: var(--text-2); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chan .sub.watch { color: var(--text); }
+  .moment { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; padding: 11px 0; border-top: 1px solid var(--line); align-items: baseline; }
+  .moment:first-child { border-top: 0; }
+  .moment .when { font-size: 12.5px; color: var(--text-2); }
+  .moment .why { grid-column: 2 / 4; font-size: 13px; color: var(--text-2); }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
     .bar.indet > div { animation: none; width: 100% !important; opacity: .45; }
@@ -224,6 +253,10 @@
     <button class="btn primary block" id="newBtn">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       New video
+    </button>
+    <button class="job live-nav" id="liveBtn">
+      <div class="t">Live <span class="pill">Test</span></div>
+      <div class="s"><span class="dot" id="liveDot"></span><span id="liveSide">Off</span></div>
     </button>
     <div class="side-label" id="jobsLabel">Videos</div>
     <nav class="jobs" id="jobs"></nav>
@@ -270,6 +303,36 @@
       </section>
 
       <section id="detail" hidden></section>
+
+      <section class="live" id="liveView" hidden>
+        <div class="head">
+          <div style="min-width:0;flex:1">
+            <h1>Live</h1>
+            <p class="lede">Watches Twitch channels while they're live in <span id="liveCategory">GTA VI</span>, and notes the moments their chat goes wild.</p>
+          </div>
+          <div class="actions"><button class="btn primary" id="liveToggle" disabled>Start watching</button></div>
+        </div>
+        <div class="test-note"><span class="pill on">Test mode</span><span>Notes the moments it would clip. Making real Twitch clips comes in the next update.</span></div>
+        <div id="liveError"></div>
+
+        <div class="card" id="liveAccount"></div>
+
+        <div class="card">
+          <h2>Channels</h2>
+          <div id="liveChannels"></div>
+          <form class="inline-form" id="chanForm">
+            <input id="chanInput" placeholder="Channel name or twitch.tv link" autocomplete="off" aria-label="Channel to add">
+            <button class="btn" type="submit">Add</button>
+          </form>
+          <div class="msg" id="chanMsg" role="status"></div>
+        </div>
+
+        <div class="section">
+          <div class="head"><h2>Moments</h2><button class="btn quiet small" id="liveLog">Open log folder</button></div>
+          <div id="liveMoments"></div>
+        </div>
+        <details class="log"><summary>Activity</summary><pre id="liveActivity"></pre></details>
+      </section>
     </div>
   </main>
 </div>
@@ -284,7 +347,7 @@ const STEPS = [["download","Download"],["audio","Loud moments"],["transcribe","T
 const PICKER_NAMES = {auto: "Automatic", claude: "Claude", local: "Local AI", none: "No AI"};
 let pickers = {claude: false, local: false, none: true, auto_uses: "none"};
 let settings = {}, jobs = [], selected = null, detail = null, source = "url", layout = "center";
-let view = null;            // "new" or null (= show the selected video)
+let view = null;            // "new", "live", or null (= show the selected video)
 let fcDraft = null, deleteArmed = false;
 
 function pickerOptions(selectedValue) {
@@ -339,10 +402,13 @@ segment($("#layoutSeg"), v => { layout = v; });
 
 // ---- views ----
 function showView() {
-  const isNew = view === "new" || !selected;
+  const isLive = view === "live";
+  const isNew = !isLive && (view === "new" || !selected);
   $("#newView").hidden = !isNew;
-  $("#detail").hidden = isNew;
+  $("#liveView").hidden = !isLive;
+  $("#detail").hidden = isNew || isLive;
   $("#newBtn").setAttribute("aria-current", isNew ? "page" : "false");
+  $("#liveBtn").setAttribute("aria-current", isLive ? "page" : "false");
 }
 $("#newBtn").addEventListener("click", () => {
   view = "new"; showView(); renderJobs();
@@ -384,7 +450,7 @@ function progressBar(j) {
             ${indet ? "" : `aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"`}><div style="width:${pct}%"></div></div>`;
 }
 function renderJobs() {
-  const isNew = view === "new" || !selected;
+  const isNew = view === "new" || view === "live" || !selected;
   $("#jobsLabel").hidden = !jobs.length;
   $("#jobs").innerHTML = jobs.length ? jobs.map(j => `
     <button class="job" data-id="${j.id}" aria-current="${!isNew && j.id === selected}">
@@ -566,7 +632,7 @@ async function refresh() {
     if (firstLoad) { firstLoad = false; if (!jobs.length) view = "new"; }
     renderJobs();
     showView();
-    detail = selected && view !== "new" ? await api(`/api/jobs/${selected}`).catch(() => null) : null;
+    detail = selected && !view ? await api(`/api/jobs/${selected}`).catch(() => null) : null;
     if (detailKey() !== lastDetailKey) { lastDetailKey = detailKey(); renderDetail(); }
   } catch (e) { /* engine restarting: try again on the next tick */ }
 }
@@ -691,6 +757,146 @@ let lastUpdCheck = 0;
     await refreshUpdate();
   }
   setTimeout(updateLoop, 1000);
+})();
+
+// ---- live mode (Twitch) ----
+let live = null, liveKeys = {};
+const LIVE_STATUS = {idle: "", offline: "Offline", not_found: "No Twitch channel with this name",
+                     connecting: "Live in GTA VI · connecting to chat…"};
+function changed(part, value) {
+  const k = JSON.stringify(value);
+  if (liveKeys[part] === k) return false;
+  liveKeys[part] = k; return true;
+}
+$("#liveBtn").addEventListener("click", () => {
+  view = "live"; liveKeys = {}; showView(); renderJobs(); $("#content").scrollTop = 0; refreshLive();
+});
+function whenText(iso) {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+  return d.toDateString() === new Date().toDateString() ? time
+    : d.toLocaleDateString([], {month: "short", day: "numeric"}) + ", " + time;
+}
+function renderLiveAccount(l) {
+  const el = $("#liveAccount"), lg = l.login || {};
+  if (!changed("account", [l.client_id_set, l.logged_in, l.bot, lg, l.running])) return;
+  if (!l.client_id_set) {
+    el.innerHTML = `<h2>Connect a Twitch app</h2>
+      <p>Twitch only lets registered apps read chat. Registering one is free and takes about 5 minutes, once:</p>
+      <ol>
+        <li>Turn on <strong>two-factor authentication</strong> on your main Twitch account. Twitch asks for it before you can register apps.</li>
+        <li>Open the <a href="https://dev.twitch.tv/console/apps/create" target="_blank" rel="noopener">Twitch developer console</a> and register an application:
+          <strong>Name</strong> anything unique, like 5tarClipper-yourname · <strong>OAuth Redirect URL</strong> http://localhost ·
+          <strong>Category</strong> Application Integration · <strong>Client Type</strong> Public.</li>
+        <li>Press <strong>Manage</strong> next to it, copy the <strong>Client ID</strong> and paste it here.</li>
+      </ol>
+      <form class="inline-form" id="cidForm"><input id="cidInput" class="num" placeholder="Client ID" autocomplete="off" aria-label="Client ID">
+        <button class="btn primary" type="submit">Save</button></form>
+      <div class="hint">The Client ID isn't a secret. Never paste a Client Secret here.</div>
+      <div class="msg" id="cidMsg" role="status"></div>`;
+    $("#cidForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      try { live = await post("/api/live/client-id", {client_id: $("#cidInput").value}); renderLive(); }
+      catch (err) { $("#cidMsg").className = "msg err"; $("#cidMsg").textContent = err.message; }
+    });
+    return;
+  }
+  if (lg.state === "waiting") {
+    el.innerHTML = `<h2>Log in with your bot account</h2>
+      <p>Twitch will ask you to confirm this code:</p>
+      <div class="code num">${esc(lg.user_code)}</div>
+      <div class="row-line"><a class="btn primary" href="${esc(lg.verification_uri)}" target="_blank" rel="noopener">Open Twitch</a>
+        <button class="btn quiet" id="loginCancel">Cancel</button></div>
+      <div class="hint">Make sure your browser is signed in to Twitch as the <strong>bot account</strong>, not your main one, then press Authorize. This page updates by itself.</div>`;
+    $("#loginCancel").addEventListener("click", async () => { live = await post("/api/live/login/cancel"); renderLive(); });
+    return;
+  }
+  if (l.logged_in) {
+    el.innerHTML = `<h2>Bot account</h2>
+      <div class="row-line" style="justify-content:space-between">
+        <div>${l.bot ? `Logged in as <strong>${esc(l.bot)}</strong>` : "Logged in"}</div>
+        <button class="btn small" id="logout" ${l.running ? "disabled title='Stop watching first'" : ""}>Log out</button></div>`;
+    $("#logout").addEventListener("click", async () => { live = await post("/api/live/logout"); renderLive(); });
+    return;
+  }
+  el.innerHTML = `<h2>Log in with your bot account</h2>
+    <p>Use the separate Twitch account you made for the bot. Twitch will ask it for two permissions: reading chat, and making clips. Clips aren't made yet; asking now saves logging in again when they arrive.</p>
+    <button class="btn primary" id="login">Log in to Twitch</button>
+    ${lg.state === "error" ? `<div class="msg err">${esc(lg.error)}</div>` : ""}
+    <div class="msg err" id="loginMsg" role="status"></div>`;
+  $("#login").addEventListener("click", async e => {
+    e.target.disabled = true;
+    try { live = await post("/api/live/login"); renderLive(); }
+    catch (err) { $("#loginMsg").textContent = err.message; e.target.disabled = false; }
+  });
+}
+function chanLine(c) {
+  if (c.chat && c.status === "watching") {
+    const ch = c.chat;
+    const parts = [`${ch.per_minute} ${ch.per_minute === 1 ? "message" : "messages"} a minute`,
+                   ch.warming_up ? "learning what's normal…" : `${ch.ratio}x normal`];
+    return `<div class="sub watch num">Live in GTA VI · ${parts.join(" · ")}</div>`;
+  }
+  const text = c.status === "connecting" ? LIVE_STATUS.connecting : c.text || LIVE_STATUS[c.status] || "";
+  return text ? `<div class="sub">${esc(text)}</div>` : "";
+}
+function renderLive() {
+  const l = live; if (!l) return;
+  $("#liveCategory").textContent = l.category === "Grand Theft Auto VI" ? "GTA VI" : l.category;
+  const watching = l.channels.filter(c => c.status === "watching" || c.status === "connecting").length;
+  $("#liveDot").className = "dot " + (l.error ? "error" : l.running ? "live" : "");
+  $("#liveSide").textContent = l.error ? "Needs attention" : l.running
+    ? (watching ? `Watching ${watching} live` : "Waiting for GTA VI streams") : "Off";
+  if (view !== "live") return;
+  const tog = $("#liveToggle");
+  tog.textContent = l.running ? "Stop watching" : "Start watching";
+  tog.className = "btn " + (l.running ? "" : "primary");
+  tog.disabled = !l.running && !(l.logged_in && l.channels.length);
+  tog.title = l.running || !tog.disabled ? "" : !l.logged_in ? "Log in to Twitch first" : "Add a channel first";
+  if (changed("error", l.error)) $("#liveError").innerHTML = l.error
+    ? `<div class="notice" role="alert"><strong>Live mode stopped.</strong> ${esc(l.error)}</div>` : "";
+  renderLiveAccount(l);
+  if (changed("channels", [l.channels, l.running])) {
+    $("#liveChannels").innerHTML = l.channels.length ? l.channels.map(c => `
+      <div class="chan"><div class="who">
+          <a class="name" href="https://www.twitch.tv/${esc(c.login)}" target="_blank" rel="noopener">${esc(c.login)}</a>
+          ${chanLine(c)}</div>
+        <button class="btn quiet small" data-remove="${esc(c.login)}" aria-label="Remove ${esc(c.login)}">Remove</button></div>`).join("")
+      : `<p>Add the Twitch channels you'd like to watch. Live mode only reads their chat while they're live in GTA VI.</p>`;
+    $("#liveChannels").querySelectorAll("[data-remove]").forEach(b => b.addEventListener("click", async () => {
+      live = await api(`/api/live/channels/${encodeURIComponent(b.dataset.remove)}`, {method: "DELETE"}); renderLive();
+    }));
+  }
+  if (changed("moments", l.moments)) {
+    $("#liveMoments").innerHTML = l.moments.length ? `<div class="card" style="margin-top:0">${l.moments.map(m => `
+      <div class="moment"><span class="when num">${esc(whenText(m.time))}</span><strong>${esc(m.channel)}</strong>
+        <span class="pill">${m.status === "would_clip" ? "Would clip" : esc(m.status)}</span>
+        <div class="why">${esc(m.reason)}</div></div>`).join("")}</div>`
+      : `<p style="color:var(--text-2);margin:0">No moments yet. When chat spikes on a channel you're watching, it appears here.</p>`;
+  }
+  if (changed("activity", l.activity))
+    $("#liveActivity").textContent = l.activity.map(a => `[${a.t}] ${a.msg}`).join("\n") || "Nothing yet.";
+}
+async function refreshLive() {
+  try { live = await api("/api/live"); } catch { return; }
+  renderLive();
+}
+$("#liveToggle").addEventListener("click", async e => {
+  e.target.disabled = true;
+  try { live = await post(live.running ? "/api/live/stop" : "/api/live/start"); }
+  catch (err) { alertBox(err.message); }
+  setTimeout(refreshLive, 400);
+});
+$("#chanForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("#chanMsg").className = "msg"; $("#chanMsg").textContent = "";
+  try { live = await post("/api/live/channels", {channel: $("#chanInput").value}); $("#chanInput").value = ""; renderLive(); }
+  catch (err) { $("#chanMsg").className = "msg err"; $("#chanMsg").textContent = err.message; }
+});
+$("#liveLog").addEventListener("click", () => post("/api/live/open-log").catch(e => alertBox(e.message)));
+(async function liveLoop() {
+  await refreshLive();
+  setTimeout(liveLoop, view === "live" || live?.running || live?.login?.state === "waiting" ? 2000 : 10000);
 })();
 
 // The Windows app injects window.pywebview slightly after the page loads: redraw once it's there.

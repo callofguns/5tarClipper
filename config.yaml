@@ -50,14 +50,10 @@ video:
   caption_words_per_line: 3
 
 # ---------------------------------------------------------------
-# TWITCH LIVE MODE  (python -m clipper live --test)
+# TWITCH LIVE MODE  (the Live page in the app)
 # ---------------------------------------------------------------
+# The channels to watch are added on the Live page. These are the trigger settings.
 twitch:
-  # Twitch usernames to watch (lowercase is fine).
-  channels:
-    - example_channel_1
-    - example_channel_2
-
   category_name: Grand Theft Auto VI
   check_live_every_seconds: 60
 

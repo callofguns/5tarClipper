@@ -4,6 +4,8 @@
 
 Paste a YouTube or Twitch VOD link, or upload a file. The app makes vertical 1080x1920 clips of the best moments, with captions. Clips are saved for you to review and are **never posted automatically**.
 
+**Live mode** (in testing) watches Twitch channels while they're live in GTA VI and spots the moments their chat goes wild.
+
 **Download the Windows app:** [5tarClipper-Setup.exe](https://github.com/callofguns/5tarClipper/releases/latest/download/5tarClipper-Setup.exe). Project page: https://callofguns.github.io/5tarClipper/
 
 Only clip videos you have permission to use.
@@ -77,6 +79,21 @@ The Claude option runs `claude -p` (Claude Code headless mode) **once per video*
 The app refuses to run Claude if the `ANTHROPIC_API_KEY` environment variable is set. With that set, Claude Code would bill the API instead of your plan.
 
 Settings like the number of clips, clip lengths, caption size and the Claude model are in `config.yaml`.
+
+## Live mode (Twitch, test mode)
+The **Live** page watches Twitch channels while they're live in GTA VI and notes the moments their chat suddenly goes wild. For now it only **notes** them (in the app and in `logs/clips.csv`); making real Twitch clips comes in a later update.
+
+One-time setup:
+1. Turn on two-factor authentication on your main Twitch account.
+2. Register an app at https://dev.twitch.tv/console/apps/create: any unique name, OAuth Redirect URL `http://localhost`, Category *Application Integration*, Client Type **Public**. Copy its **Client ID** into the Live page. (No client secret is needed or used.)
+3. Press **Log in to Twitch** and approve the code while signed in to Twitch as your **bot account**. It asks for `user:read:chat` (read chat) and `clips:edit` (for the clipping update).
+4. Add channels and press **Start watching**.
+
+How a moment is spotted: every chat message scores 1 point, plus up to 2 for reactions like LUL, KEKW, OMG, W, "CLIP IT" and "no way". One person adds at most 3 points per 10 seconds, so a spammer can't fake it. When the last 10 seconds score at least **3x** the channel's normal level over the last 5 minutes, with at least **5** different people chatting, it's a moment. After a moment there's a 90-second wait on that channel. All of these numbers are in the `twitch:` part of `config.yaml`.
+
+From a terminal: `python -m clipper login` logs the bot in, and `python -m clipper live --channel NAME` runs live mode without the window.
+
+The login is kept in `.env` in the app's data folder (`%LOCALAPPDATA%\5tarClipper` for the installed app). The access token is refreshed automatically; if it's been unused for 30 days, Twitch asks you to log in again.
 
 ## Tests
 ```powershell
