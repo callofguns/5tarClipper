@@ -104,6 +104,14 @@ def create_app(cfg: dict) -> FastAPI:
         app.state.on_focus()
         return {"ok": True}
 
+    @app.get("/fonts/{name}")
+    def font(name: str):
+        """The bundled Inter font (SIL Open Font License)."""
+        path = STATIC / "fonts" / name
+        if name not in ("InterVariable.woff2", "Inter-OFL.txt") or not path.exists():
+            raise HTTPException(404, "No such font.")
+        return FileResponse(path, headers={"Cache-Control": "max-age=31536000"})
+
     @app.get("/favicon.png")
     def favicon():
         from clipper.config import code_path
