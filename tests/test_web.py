@@ -60,6 +60,14 @@ def test_bad_link_rejected(client):
     assert r.status_code == 400 and "YouTube" in r.json()["detail"]
 
 
+def test_bundled_font_is_served_and_nothing_else(client):
+    r = client.get("/fonts/InterVariable.woff2")
+    assert r.status_code == 200 and len(r.content) > 100_000
+    assert client.get("/fonts/Inter-OFL.txt").status_code == 200        # the font's licence ships with it
+    assert client.get("/fonts/..%2Fserver.py").status_code == 404
+    assert client.get("/fonts/other.woff2").status_code == 404
+
+
 def test_bad_job_id(client):
     assert client.get("/api/jobs/..%2F..%2Fsecret").status_code == 404
     assert client.get("/api/jobs/zzzzzzzzzzzz").status_code == 404
