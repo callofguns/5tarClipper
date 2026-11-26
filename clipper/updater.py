@@ -26,10 +26,12 @@ try:
 except ImportError:
     VERSION = "dev"
 
-REPO = "callofguns/GTA6-Clipper"
+REPO = "callofguns/5tarClipper"
 API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
-# Installer names, newest first. Releases also carry the pre-rename name so versions from before
-# the rename (v0.4-Beta, v0.4.1-Beta) can still find their update.
+# Every name this repo has had: downloads are only trusted from these. Listing old names means a
+# future rename can't break updates (renaming GTA6-Clipper -> 5tarClipper broke v0.4 / v0.4.1).
+TRUSTED_REPOS = ("callofguns/5tarClipper", "callofguns/GTA6-Clipper")
+# Installer names, newest first (the old name is accepted in case a release only has that).
 ASSETS = ("5tarClipper-Setup.exe", "GTA6-Clipper-Setup.exe")
 SETTINGS = DATA_ROOT / "settings.json"
 UPDATES_DIR = DATA_ROOT / "updates"
@@ -147,8 +149,9 @@ def _check_loop():
 
 # ---------------------------------------------------------------- download + install
 def _safe_asset_url(url: str) -> bool:
-    # GitHub repo names ignore capitals (the repo was renamed gta6-clipper -> GTA6-Clipper once).
-    return url.lower().startswith(f"https://github.com/{REPO}/releases/download/".lower())
+    # GitHub repo names ignore capitals, so compare in lower case.
+    return any(url.lower().startswith(f"https://github.com/{r}/releases/download/".lower())
+               for r in TRUSTED_REPOS)
 
 
 def start_download(install_after: bool) -> None:

@@ -54,6 +54,8 @@ def test_failed_update_is_forgotten(app_data):
 
 
 def test_only_downloads_from_this_repos_releases():
+    assert updater._safe_asset_url(       # the repo's current name
+        "https://github.com/callofguns/5tarClipper/releases/download/v0.4.2-Beta/5tarClipper-Setup.exe")
     assert updater._safe_asset_url(
         "https://github.com/callofguns/GTA6-Clipper/releases/download/v0.4-Beta/GTA6-Clipper-Setup.exe")
     assert updater._safe_asset_url(       # capitals don't matter on GitHub

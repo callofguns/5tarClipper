@@ -12,7 +12,7 @@ AppId={{6B1E3F2A-9C4D-4E8B-A7F1-2D5C8E9B0A13}
 AppName=5tarClipper
 AppVersion={#AppVersion}
 AppPublisher=callofguns
-AppPublisherURL=https://github.com/callofguns/GTA6-Clipper
+AppPublisherURL=https://github.com/callofguns/5tarClipper
 DefaultDirName={localappdata}\Programs\5tarClipper
 ; Move installs from the old "GTA6 Clipper" folder into the new one (the old folder is removed below)
 UsePreviousAppDir=no

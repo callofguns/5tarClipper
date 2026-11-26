@@ -4,7 +4,7 @@
 
 Paste a YouTube or Twitch VOD link, or upload a file. The app makes vertical 1080x1920 clips of the best moments, with captions. Clips are saved for you to review and are **never posted automatically**.
 
-**Download the Windows app:** [5tarClipper-Setup.exe](https://github.com/callofguns/GTA6-Clipper/releases/latest/download/5tarClipper-Setup.exe). Project page: https://callofguns.github.io/GTA6-Clipper/
+**Download the Windows app:** [5tarClipper-Setup.exe](https://github.com/callofguns/5tarClipper/releases/latest/download/5tarClipper-Setup.exe). Project page: https://callofguns.github.io/5tarClipper/
 
 Only clip videos you have permission to use.
 
