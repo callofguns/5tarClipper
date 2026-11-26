@@ -1,6 +1,7 @@
 """Command line entry point.
 
-    python -m clipper web      start the web app and open it in your browser
+    python -m clipper app      start the app in its own window
+    python -m clipper web      start it in your browser instead (for development)
 """
 import argparse
 import sys
@@ -27,12 +28,17 @@ def cmd_web(cfg: dict, args) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(prog="python -m clipper")
     sub = parser.add_subparsers(dest="command", required=True)
-    p = sub.add_parser("web", help="Start the web app")
+    sub.add_parser("app", help="Start the app in its own window (like the installed version)")
+    p = sub.add_parser("web", help="Start it in your browser instead (handy for development)")
     p.add_argument("--port", type=int, help="port number (default from config.yaml)")
     p.add_argument("--no-browser", action="store_true", help="don't open the browser automatically")
 
     args = parser.parse_args()
     try:
+        if args.command == "app":
+            from clipper.app import main as app_main
+            app_main()
+            return
         cfg = load_config()
         if args.command == "web":
             cmd_web(cfg, args)

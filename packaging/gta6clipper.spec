@@ -13,9 +13,10 @@ datas = [
 ]
 datas += collect_data_files("faster_whisper")      # the voice-detection model file
 datas += collect_data_files("yt_dlp_ejs")          # YouTube helper scripts
-binaries = collect_dynamic_libs("ctranslate2")
+datas += collect_data_files("webview")             # the app window (Edge WebView2 bridge files)
+binaries = collect_dynamic_libs("ctranslate2") + collect_dynamic_libs("webview")
 hiddenimports = (collect_submodules("uvicorn") + collect_submodules("yt_dlp")
-                 + ["pystray._win32", "multipart"])
+                 + ["webview.platforms.edgechromium", "webview.platforms.winforms", "clr", "multipart"])
 
 a = Analysis(
     [str(ROOT / "packaging" / "launcher.py")],
@@ -32,7 +33,7 @@ exe = EXE(
     exclude_binaries=True,
     name="GTA6 Clipper",
     icon=str(ROOT / "assets" / "icon.ico"),
-    console=False,              # no black window: it lives in the system tray
+    console=False,              # no black console window: the app has its own window
     upx=False,
 )
 coll = COLLECT(exe, a.binaries, a.datas, name="GTA6 Clipper", upx=False)

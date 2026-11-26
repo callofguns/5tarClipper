@@ -32,6 +32,8 @@ You also need:
 
 Your browser opens at **http://127.0.0.1:8765**. Keep the PowerShell window open while you use it, and press Ctrl+C there to stop. Only this PC can open the page; it isn't reachable from your network or the internet.
 
+To open it in its own window instead (like the installed app), run `.\.venv\Scripts\python.exe -m clipper app`.
+
 ### Making clips
 1. Paste a YouTube or Twitch VOD link, or switch to **Upload file**.
 2. Fill in the **creator's name** and **the permission you have**. Both are required and are saved with every clip.
@@ -81,7 +83,7 @@ Settings like the number of clips, clip lengths, caption size and the Claude mod
 
 ## Building the Windows app
 ```powershell
-.\.venv\Scripts\python.exe -m pip install pyinstaller pystray pillow
+.\.venv\Scripts\python.exe -m pip install pyinstaller pillow
 .\.venv\Scripts\python.exe -m PyInstaller packaging\gta6clipper.spec --noconfirm   # -> dist\GTA6 Clipper\
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DAppVersion=0.1-Beta packaging\installer.iss   # -> dist\GTA6-Clipper-Setup.exe
 ```

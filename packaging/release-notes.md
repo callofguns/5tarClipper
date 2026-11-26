@@ -2,7 +2,7 @@
 
 **[GTA6-Clipper-Setup.exe](https://github.com/callofguns/gta6-clipper/releases/latest/download/GTA6-Clipper-Setup.exe)** for Windows (64-bit). No admin rights needed.
 
-On first launch, the app opens in your browser and shows a **Setup** checklist. Use it to download FFmpeg, a YouTube helper and, optionally, NVIDIA GPU files for faster transcription and a free local AI model.
+The app runs in its own window. On first launch it shows a **Setup** checklist. Use it to download FFmpeg, a YouTube helper and, optionally, NVIDIA GPU files for faster transcription and a free local AI model.
 
 Moments are picked by **Claude** (needs [Claude Code](https://code.claude.com/docs/en/quickstart) and a Claude plan), a **free local AI** (needs [Ollama](https://ollama.com)), or **No AI** (works right after install). Choose per video, or leave it on Automatic.
 

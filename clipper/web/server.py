@@ -27,6 +27,8 @@ def create_app(cfg: dict) -> FastAPI:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
     store = JobStore(cfg)
     vcfg = cfg["video"]
+    app.state.store = store
+    app.state.on_focus = None         # set by the Windows app to bring its window to the front
 
     @app.middleware("http")
     async def require_app_header(request: Request, call_next):
@@ -52,6 +54,14 @@ def create_app(cfg: dict) -> FastAPI:
     @app.get("/")
     def index():
         return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/focus")
+    def focus():
+        """Opening the app a second time asks the running one to show its window."""
+        if app.state.on_focus is None:
+            return {"ok": False}
+        app.state.on_focus()
+        return {"ok": True}
 
     @app.get("/favicon.png")
     def favicon():

@@ -4,6 +4,9 @@ nvidia-cublas-cu12
 nvidia-cudnn-cu12==9.*
 numpy
 
+# App window (uses Windows' built-in Edge WebView2)
+pywebview
+
 # Web app + downloading links (YouTube needs Node.js or Deno installed)
 fastapi
 uvicorn[standard]

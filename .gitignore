@@ -19,3 +19,6 @@ input/
 output/
 logs/
 cache/
+tools/
+webview/
+settings.json

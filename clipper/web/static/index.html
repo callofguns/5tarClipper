@@ -283,7 +283,7 @@ function renderDetail() {
           <div class="title">${esc(c.title)}</div>
           <div class="why">${esc(c.reason)}</div>
           <div class="row"><span>${mmss(c.start)}–${mmss(c.end)} · ${(c.end - c.start).toFixed(0)}s · ${c.score}/10</span>
-            <a href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}">Download</a></div>
+            <a href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}" data-save="${esc(c.file)}">${window.pywebview ? "Save as…" : "Download"}</a></div>
           ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
         </div>
       </div>`).join("")}</div></div>` : ""}
@@ -318,6 +318,13 @@ function wireDetail() {
   const d = detail;
   $("#retry")?.addEventListener("click", async () => { await api(`/api/jobs/${d.id}/retry`, {method: "POST"}); refresh(); });
   $("#openFolder")?.addEventListener("click", () => api(`/api/jobs/${d.id}/open-folder`, {method: "POST"}));
+  // In the Windows app, "Save as…" opens a normal Windows save box instead of a browser download.
+  document.querySelectorAll("[data-save]").forEach(a => a.addEventListener("click", async e => {
+    if (!window.pywebview?.api?.save_clip) return;      // in a browser: normal download
+    e.preventDefault();
+    const saved = await window.pywebview.api.save_clip(d.id, a.dataset.save).catch(() => null);
+    if (saved) { const old = a.textContent; a.textContent = "Saved ✓"; setTimeout(() => (a.textContent = old), 2500); }
+  }));
   $("#repick")?.addEventListener("click", async () => {
     try {
       await api(`/api/jobs/${d.id}/repick`, {method: "POST", headers: {"content-type": "application/json"},
@@ -443,6 +450,8 @@ async function refreshSetup() {
   }));
 }
 
+// The Windows app injects window.pywebview slightly after the page loads: redraw once it's there.
+window.addEventListener("pywebviewready", () => { lastDetailKey = ""; refresh(); });
 api("/api/settings").then(s => { settings = s; }).catch(() => {});
 refresh();
 refreshPickers();
