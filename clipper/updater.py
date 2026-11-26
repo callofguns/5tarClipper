@@ -28,7 +28,9 @@ except ImportError:
 
 REPO = "callofguns/GTA6-Clipper"
 API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
-ASSET = "GTA6-Clipper-Setup.exe"
+# Installer names, newest first. Releases also carry the pre-rename name so versions from before
+# the rename (v0.4-Beta, v0.4.1-Beta) can still find their update.
+ASSETS = ("5tarClipper-Setup.exe", "GTA6-Clipper-Setup.exe")
 SETTINGS = DATA_ROOT / "settings.json"
 UPDATES_DIR = DATA_ROOT / "updates"
 CHECK_EVERY = 6 * 3600
@@ -166,7 +168,8 @@ def _download(install_after: bool):
     try:
         with _lock:
             latest, assets = _state["latest"], dict(_state.get("assets") or {})
-        exe_url, sum_url = assets.get(ASSET), assets.get(ASSET + ".sha256")
+        name = next((n for n in ASSETS if n in assets and n + ".sha256" in assets), ASSETS[0])
+        exe_url, sum_url = assets.get(name), assets.get(name + ".sha256")
         if not exe_url or not sum_url or not (_safe_asset_url(exe_url) and _safe_asset_url(sum_url)):
             raise RuntimeError("The latest release is missing its installer or checksum file.")
         r = httpx.get(sum_url, follow_redirects=True, timeout=30)
@@ -177,7 +180,7 @@ def _download(install_after: bool):
         expected = m.group(0).lower()
 
         UPDATES_DIR.mkdir(parents=True, exist_ok=True)
-        target = UPDATES_DIR / f"GTA6-Clipper-Setup-{latest}.exe"
+        target = UPDATES_DIR / f"5tarClipper-Setup-{latest}.exe"
         part = target.with_suffix(".part")
         h = hashlib.sha256()
         with httpx.stream("GET", exe_url, follow_redirects=True, timeout=60) as resp:
@@ -240,7 +243,7 @@ def install_on_exit_if_ready() -> None:
 
 
 def _cleanup_old_installers():
-    for p in UPDATES_DIR.glob("GTA6-Clipper-Setup-*"):
+    for p in [*UPDATES_DIR.glob("5tarClipper-Setup-*"), *UPDATES_DIR.glob("GTA6-Clipper-Setup-*")]:
         try:
             p.unlink()
         except OSError:

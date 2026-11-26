@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>GTA VI Clipper</title>
+<title>5tarClipper</title>
 <link rel="icon" href="/favicon.png">
 <style>
   /* ---------- Tokens: "Vice night" (dark) and "Vice day" (light), following the Windows setting ----------
@@ -26,6 +26,7 @@
       --done: #34d6c4; --danger: #ff6b6b; --danger-soft: rgba(255, 107, 107, .10);
       --sunset: linear-gradient(90deg, #ff5aa5, #ff9a5a 62%, #ffc76b);
       --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+      --seg-on: #332d42;   /* selected segment is lighter than its track, like Apple's */
     }
   }
   /* Type: SF Pro on Apple devices (the system font there). Everywhere else, Inter: an open-licensed
@@ -107,7 +108,7 @@
   .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
   .seg button { background: none; border: 0; color: var(--text-2); padding: 6px 14px; border-radius: 7px;
                 cursor: pointer; font: inherit; font-weight: 500; }
-  .seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
+  .seg button.on { background: var(--seg-on, var(--surface)); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
   .seg.full { display: flex; } .seg.full button { flex: 1; }
 
   /* ---------- Page headings ---------- */
@@ -158,8 +159,11 @@
                 box-shadow: var(--shadow); }
   .clip .title { font-weight: 600; margin-top: 10px; line-height: 1.35; }
   .clip .why { font-size: 13px; color: var(--text-2); margin: 4px 0 8px; }
-  .clip .row { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--text-2); }
-  .clip .save { color: var(--accent); font-weight: 600; text-decoration: none; padding: 4px 6px; margin: -4px -6px; border-radius: 6px; }
+  .clip .row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--text-2); }
+  .clip .meta-line { white-space: nowrap; }
+  /* margin-left:auto keeps Download on the right edge, even when it wraps onto its own line */
+  .clip .save { margin-left: auto; color: var(--accent); font-weight: 600; text-decoration: none;
+                padding: 4px 6px; margin-right: -6px; border-radius: 6px; }
   .clip .save:hover { background: var(--accent-soft); }
   .score { color: var(--text); font-weight: 600; }
 
@@ -212,7 +216,7 @@
   <aside class="sidebar" aria-label="Videos">
     <div class="brand">
       <img src="/favicon.png" alt="">
-      <span>GTA VI Clipper</span>
+      <span>5tarClipper</span>
       <button class="icon-btn" id="setupToggle" aria-pressed="false" aria-label="Setup" title="Setup">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
       </button>
@@ -274,6 +278,7 @@
 const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const mmss = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, "0")}`;
+const mmssWhole = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;   // clip cards: no tenths
 const STEPS = [["download","Download"],["audio","Loud moments"],["transcribe","Transcript"],
                ["rank","Pick moments"],["plan","Cut points"],["render","Render"]];
 const PICKER_NAMES = {auto: "Automatic", claude: "Claude", local: "Local AI", none: "No AI"};
@@ -440,7 +445,7 @@ function renderDetail() {
         <video controls preload="metadata" src="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}?v=${encodeURIComponent(c.rendered_at)}" aria-label="${esc(c.title)}"></video>
         <div class="title">${esc(c.title)}</div>
         <div class="why">${esc(c.reason)}</div>
-        <div class="row"><span class="num">${mmss(c.start)}–${mmss(c.end)} · ${(c.end - c.start).toFixed(0)}s · <span class="score">${c.score}</span>/10</span>
+        <div class="row"><span class="num meta-line">${mmssWhole(c.start)}–${mmssWhole(c.end)} · ${(c.end - c.start).toFixed(0)}s · <span class="score">${c.score}</span>/10</span>
           <a class="save" href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}" data-save="${esc(c.file)}">${window.pywebview ? "Save as…" : "Download"}</a></div>
         ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
       </article>`).join("")}</div></div>` : ""}

@@ -35,7 +35,7 @@ def client():
 
 def test_page_loads(client):
     r = client.get("/")
-    assert r.status_code == 200 and "GTA VI" in r.text
+    assert r.status_code == 200 and "5tarClipper" in r.text
 
 
 def test_changes_need_the_app_header(client):

@@ -1,4 +1,4 @@
-"""The Windows app: GTA VI Clipper in its own window (no browser needed).
+"""The Windows app: 5tarClipper in its own window (no browser needed).
 
 The interface is the same page as before, shown in a native window by pywebview using Windows'
 built-in Edge WebView2. The processing engine runs inside the app, reachable only from this PC.
@@ -12,7 +12,7 @@ import time
 import urllib.request
 import webbrowser
 
-TITLE = "GTA VI Clipper"
+TITLE = "5tarClipper"
 
 
 def _port_in_use(port: int) -> bool:
@@ -123,7 +123,7 @@ def main() -> None:
             return True
         busy = any(j["status"] in ("queued", "running") for j in store.all())
         if busy and not window.create_confirmation_dialog(
-                "Quit GTA VI Clipper?",
+                "Quit 5tarClipper?",
                 "A video is still being processed. If you quit now it stops, "
                 "and you can press Retry next time to continue where it left off."):
             return False

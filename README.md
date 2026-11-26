@@ -1,8 +1,10 @@
-# GTA VI Clipper
+# 5tarClipper
+
+*Formerly GTA VI Clipper.*
 
 Paste a YouTube or Twitch VOD link, or upload a file. The app makes vertical 1080x1920 clips of the best moments, with captions. Clips are saved for you to review and are **never posted automatically**.
 
-**Download the Windows app:** [GTA6-Clipper-Setup.exe](https://github.com/callofguns/GTA6-Clipper/releases/latest/download/GTA6-Clipper-Setup.exe). Project page: https://callofguns.github.io/GTA6-Clipper/
+**Download the Windows app:** [5tarClipper-Setup.exe](https://github.com/callofguns/GTA6-Clipper/releases/latest/download/5tarClipper-Setup.exe). Project page: https://callofguns.github.io/GTA6-Clipper/
 
 Only clip videos you have permission to use.
 
@@ -84,12 +86,12 @@ Settings like the number of clips, clip lengths, caption size and the Claude mod
 ## Building the Windows app
 ```powershell
 .\.venv\Scripts\python.exe -m pip install pyinstaller pillow
-.\.venv\Scripts\python.exe -m PyInstaller packaging\gta6clipper.spec --noconfirm   # -> dist\GTA6 Clipper\
-& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DAppVersion=0.1-Beta packaging\installer.iss   # -> dist\GTA6-Clipper-Setup.exe
+.\.venv\Scripts\python.exe -m PyInstaller packaging\gta6clipper.spec --noconfirm   # -> dist\5tarClipper\
+& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DAppVersion=0.5-Beta packaging\installer.iss   # -> dist\5tarClipper-Setup.exe
 ```
 Releases are built automatically by GitHub Actions (`.github/workflows/release.yml`) when a version tag like `v0.5-Beta` is pushed. Each release needs its notes in `packaging/release-notes/<tag>.md` (copy `TEMPLATE.md`), written in the same pull request as the changes; the build stops if they are missing. The project page in `site/` is published to GitHub Pages by `.github/workflows/pages.yml`.
 
-The installed app keeps its settings, caches and downloaded tools in `%LOCALAPPDATA%\GTA6 Clipper`, and saves clips to `Videos\GTA6 Clipper`.
+The installed app keeps its settings, caches and downloaded tools in `%LOCALAPPDATA%\5tarClipper`, and saves clips to `Videos\5tarClipper` (folders from the old "GTA6 Clipper" name are moved there automatically).
 
 ## Secrets
 Secrets go in `.env` (copy `.env.example`). `.env`, downloaded videos, clips, logs and caches are all listed in `.gitignore`, so they never go into Git.

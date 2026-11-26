@@ -1,5 +1,5 @@
 # PyInstaller recipe for the Windows app.  Build with:  pyinstaller packaging/gta6clipper.spec
-# Output: dist/GTA6 Clipper/GTA6 Clipper.exe  (a folder, which the installer then packs up)
+# Output: dist/5tarClipper/5tarClipper.exe  (a folder, which the installer then packs up)
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
@@ -31,9 +31,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
-    name="GTA6 Clipper",
+    name="5tarClipper",
     icon=str(ROOT / "assets" / "icon.ico"),
     console=False,              # no black console window: the app has its own window
     upx=False,
 )
-coll = COLLECT(exe, a.binaries, a.datas, name="GTA6 Clipper", upx=False)
+coll = COLLECT(exe, a.binaries, a.datas, name="5tarClipper", upx=False)
