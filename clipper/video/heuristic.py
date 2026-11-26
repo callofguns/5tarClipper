@@ -158,7 +158,8 @@ def pick(transcript: dict, loud: list[dict], db_curve, duration: float, vcfg: di
         words = sum(1 for seg in transcript["segments"] for w in seg["words"] if start <= w["start"] < end)
         if words / max(1, end - start) > 1.25 * normal_rate and words >= 20:
             reasons.append("faster talking than usual")
-        reason = ("; ".join(reasons) or "busiest stretch of the video").capitalize() + "."
+        reason = "; ".join(reasons) or "busiest stretch of the video"
+        reason = reason[0].upper() + reason[1:] + "."    # (.capitalize() would turn "dB" into "db")
         moments.append({
             "start": float(start), "end": float(min(end, duration)),
             "title": _title_for(start, end, transcript, window_hits, peak_loud),
