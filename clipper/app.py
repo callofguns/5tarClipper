@@ -100,7 +100,7 @@ def main() -> None:
 
     api = WindowApi(store)
     window = webview.create_window(TITLE, url, js_api=api, width=1320, height=860,
-                                   min_size=(900, 620), background_color="#0e0f13", text_select=True)
+                                   min_size=(900, 620), background_color="#0c0b12", text_select=True)
     api._window = window
 
     def bring_to_front():
