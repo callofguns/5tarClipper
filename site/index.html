@@ -33,9 +33,10 @@
   header.hero { padding: 56px 0 36px; text-align: center; }
   .hero h1 { font-size: clamp(34px, 6vw, 58px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.5px; }
   .hero p.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
-  .cta { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #fff;
-         background: linear-gradient(90deg, var(--accent), #ff7a59); padding: 15px 26px; border-radius: 12px;
-         font-weight: 700; font-size: 17px; box-shadow: 0 8px 30px rgba(255, 79, 163, .25); }
+  /* Solid Vice pink with dark text: 6.6:1 (white on the old gradient was 2.57:1 at its orange end). */
+  .cta { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #1b0a14;
+         background: #ff5aa5; padding: 15px 26px; border-radius: 12px;
+         font-weight: 700; font-size: 17px; box-shadow: 0 8px 30px rgba(255, 90, 165, .25); }
   .cta:hover { filter: brightness(1.07); }
   .cta svg { width: 20px; height: 20px; }
   .sub-cta { margin-top: 12px; font-size: 14px; color: var(--muted); }
@@ -53,7 +54,7 @@
   .step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
   .step::before { counter-increment: s; content: counter(s); display: inline-grid; place-items: center;
                   width: 28px; height: 28px; border-radius: 8px; font-weight: 700; font-size: 14px;
-                  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; margin-bottom: 10px; }
+                  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #1b0a14; margin-bottom: 10px; }  /* dark numbers: 6.3–10.7:1 */
   .step h3 { margin: 0 0 4px; font-size: 17px; }
   .step p { margin: 0; color: var(--muted); font-size: 15px; }
   .split { display: grid; grid-template-columns: 1.15fr 1fr; gap: 36px; align-items: center; }
