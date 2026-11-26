@@ -3,162 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>GTA VI Clipper</title>
 <link rel="icon" href="/favicon.png">
 <style>
+  /* ---------- Tokens: "Vice night" (dark) and "Vice day" (light), following the Windows setting ----------
+     All text pairs measured: text ≥ 16:1, secondary text ≥ 6:1, accent/teal/red ≥ 4.8:1 in both modes. */
   :root {
-    --bg: #0e0f13; --panel: #171920; --panel-2: #1e2129; --line: #2a2e39;
-    --text: #e9ebf1; --muted: #9399a8; --accent: #ff4fa3; --accent-2: #ffb340;
-    --ok: #3ddc97; --err: #ff6b6b; --radius: 12px;
+    --bg: #f6f3f7; --surface: #ffffff; --surface-2: #f4f1f6; --line: #e4dfe8;
+    --text: #17141d; --text-2: #5f586b;
+    --accent: #d4246f; --on-accent: #ffffff; --accent-soft: rgba(212, 36, 111, .10);
+    --done: #0b8077; --danger: #c92a3a; --danger-soft: rgba(201, 42, 58, .08);
+    --sunset: linear-gradient(90deg, #d4246f, #e8743a 62%, #f0a63c);
+    --shadow: 0 1px 2px rgba(23, 20, 29, .06), 0 4px 16px rgba(23, 20, 29, .05);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0b12; --surface: #15131d; --surface-2: #1d1a27; --line: #2b2736;
+      --text: #f3f0f7; --text-2: #a69fb5;
+      --accent: #ff5aa5; --on-accent: #1b0a14; --accent-soft: rgba(255, 90, 165, .12);
+      --done: #34d6c4; --danger: #ff6b6b; --danger-soft: rgba(255, 107, 107, .10);
+      --sunset: linear-gradient(90deg, #ff5aa5, #ff9a5a 62%, #ffc76b);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4);
+    }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--text);
-         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  header { padding: 20px 24px; border-bottom: 1px solid var(--line);
-           display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  header h1 { margin: 0; font-size: 22px; letter-spacing: .3px; }
-  header h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2));
-                   -webkit-background-clip: text; background-clip: text; color: transparent; }
-  header p { margin: 0; color: var(--muted); font-size: 13px; }
-  main { display: grid; grid-template-columns: 360px 1fr; gap: 20px; padding: 20px 24px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
-  h2 { font-size: 15px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 5px; }
-  input, textarea { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-                    border-radius: 8px; padding: 9px 11px; font: inherit; }
-  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  textarea { resize: vertical; min-height: 64px; }
-  .seg { display: flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
-  .seg button { flex: 1; background: none; border: 0; color: var(--muted); padding: 7px; border-radius: 6px; cursor: pointer; font: inherit; }
-  .seg button.on { background: var(--line); color: var(--text); }
-  .btn { background: linear-gradient(90deg, var(--accent), #ff7a59); color: #fff; border: 0; border-radius: 8px;
-         padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
-  .btn.ghost { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-weight: 500; }
-  .btn.danger { background: transparent; border: 1px solid var(--err); color: var(--err); font-weight: 500; }
-  .btn:disabled { opacity: .5; cursor: default; }
-  .full { width: 100%; margin-top: 16px; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .msg { margin-top: 10px; font-size: 13px; }
-  .msg.err { color: var(--err); }
-  .jobs { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .job { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
-  .job.sel { border-color: var(--accent); }
+         font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Layout: sidebar (navigation) + content ---------- */
+  .app { display: grid; grid-template-columns: 272px 1fr; height: 100%; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--line); padding: 16px 12px;
+             display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+  .content { overflow: auto; padding: 28px 36px 48px; }
+  .content-inner { max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+    .content { padding: 20px 16px 40px; overflow: visible; }
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+  .brand img { width: 26px; height: 26px; border-radius: 7px; }
+  .brand span { font-weight: 600; font-size: 15px; flex: 1; }
+  .icon-btn { background: none; border: 0; color: var(--text-2); width: 32px; height: 32px; border-radius: 8px;
+              display: grid; place-items: center; cursor: pointer; }
+  .icon-btn:hover, .icon-btn[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+  .side-label { font-size: 12.5px; font-weight: 600; color: var(--text-2); padding: 4px 8px 0; }
+
+  .jobs { display: flex; flex-direction: column; gap: 2px; }
+  .job { all: unset; box-sizing: border-box; display: block; padding: 9px 10px; border-radius: 9px; cursor: pointer; }
+  .job:hover { background: var(--surface-2); }
+  .job[aria-current="true"] { background: var(--accent-soft); }
   .job .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .job .s { font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-top: 3px; }
-  .pill { font-size: 11px; padding: 1px 8px; border-radius: 99px; background: var(--line); color: var(--text); }
-  .pill.done { background: rgba(61,220,151,.15); color: var(--ok); }
-  .pill.error { background: rgba(255,107,107,.15); color: var(--err); }
-  .pill.running { background: rgba(255,79,163,.15); color: var(--accent); }
-  .bar { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
-  .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s; }
-  .bar.indet > div { width: 30% !important; animation: slide 1.2s infinite ease-in-out; }
+  .job[aria-current="true"] .t { color: var(--accent); }
+  .job .s { font-size: 12.5px; color: var(--text-2); display: flex; gap: 6px; align-items: center; margin-top: 1px; }
+  .job:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--text-2); }
+  .dot.done { background: var(--done); }
+  .dot.error { background: var(--danger); border-radius: 1px; transform: rotate(45deg); }   /* shape differs too */
+  .dot.running { background: transparent; border: 2px solid var(--text-2); }
+  .side-empty { font-size: 13px; color: var(--text-2); padding: 4px 8px; }
+
+  /* ---------- Buttons and inputs ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 9px;
+         padding: 8px 14px; min-height: 34px; font: inherit; font-weight: 600; cursor: pointer;
+         border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+  .btn.primary:hover { filter: brightness(1.06); background: var(--accent); }
+  .btn.quiet { background: none; border-color: transparent; color: var(--text-2); font-weight: 500; }
+  .btn.quiet:hover { background: var(--surface-2); color: var(--text); }
+  .btn.danger { color: var(--danger); }
+  .btn.danger.armed { background: var(--danger); border-color: transparent; color: #fff; }
+  .btn:disabled { opacity: .45; cursor: default; transform: none; filter: none; }
+  .btn.small { padding: 5px 11px; min-height: 30px; font-size: 13px; }
+  .btn.block { width: 100%; }
+
+  label { display: block; font-size: 13px; font-weight: 600; margin: 18px 0 6px; }
+  input:not([type=checkbox]), textarea, .select {
+    width: 100%; background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    border-radius: 9px; padding: 9px 11px; font: inherit; }
+  input::placeholder, textarea::placeholder { color: var(--text-2); opacity: .8; }
+  input:focus, textarea:focus, .select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  textarea { resize: vertical; min-height: 68px; }
+  .select.inline { width: auto; }
+  .hint { font-size: 12.5px; color: var(--text-2); margin-top: 6px; }
+
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .seg button { background: none; border: 0; color: var(--text-2); padding: 6px 14px; border-radius: 7px;
+                cursor: pointer; font: inherit; font-weight: 500; }
+  .seg button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
+  .seg.full { display: flex; } .seg.full button { flex: 1; }
+
+  /* ---------- Page headings ---------- */
+  h1 { font-size: 22px; line-height: 1.3; font-weight: 650; margin: 0; letter-spacing: -.2px; }
+  h2 { font-size: 15px; font-weight: 650; margin: 0 0 12px; }
+  .lede { color: var(--text-2); margin: 6px 0 0; max-width: 60ch; }
+  .meta { color: var(--text-2); font-size: 13px; margin-top: 4px; overflow-wrap: anywhere; }
+  .meta a { text-decoration-color: var(--line); text-underline-offset: 3px; }
+  .section { margin-top: 32px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+
+  /* ---------- New video ---------- */
+  .new { max-width: 560px; }
+  .new form { margin-top: 22px; }
+  .new .btn.primary { margin-top: 24px; min-height: 40px; }
+  .msg { margin-top: 10px; font-size: 13px; min-height: 1em; }
+  .msg.err { color: var(--danger); }
+
+  /* ---------- Video detail ---------- */
+  .head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Signature: the sunset track. A video's journey from link to clips fills it like a Vice City horizon. */
+  .track { margin-top: 22px; }
+  .track .line { height: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .track .fill { height: 100%; background: var(--sunset); background-size: var(--fullw, 100%) 100%;
+                 border-radius: 99px; transition: width .5s ease; }
+  .track .labels { display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+  .track .labels span:nth-child(n+2) { text-align: center; } .track .labels span:last-child { text-align: right; }
+  .track .labels .now { color: var(--text); font-weight: 600; }
+  .status { margin-top: 12px; font-size: 13.5px; color: var(--text-2); }
+  .status strong { color: var(--text); font-weight: 600; }
+  @media (max-width: 600px) { .track .labels { grid-template-columns: repeat(3, 1fr); row-gap: 4px; }
+    .track .labels span { text-align: left !important; } }
+
+  .bar { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar > div { height: 100%; background: var(--sunset); border-radius: 99px; transition: width .4s; }
+  .bar.indet > div { width: 30% !important; animation: slide 1.3s infinite ease-in-out; }
   @keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
-  .empty { color: var(--muted); text-align: center; padding: 60px 20px; }
-  .detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
-  .detail-head h3 { margin: 0; font-size: 19px; }
-  .meta { color: var(--muted); font-size: 13px; margin-top: 4px; word-break: break-all; }
-  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 18px 0 6px; }
-  .step { font-size: 12px; color: var(--muted); border-top: 3px solid var(--line); padding-top: 6px; }
-  .step.done { color: var(--text); border-color: var(--ok); }
-  .step.now { color: var(--text); border-color: var(--accent); }
-  @media (max-width: 600px) { .steps { grid-template-columns: repeat(3, 1fr); } }
-  .error-box { background: rgba(255,107,107,.08); border: 1px solid rgba(255,107,107,.4); color: #ffd0d0;
-               padding: 12px; border-radius: 8px; margin-top: 14px; white-space: pre-wrap; }
-  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
-  .clips .clip { max-width: 300px; }
-  .clip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .clip video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; }
-  .clip .body { padding: 10px 12px; }
-  .clip .title { font-weight: 600; }
-  .clip .why { font-size: 13px; color: var(--muted); margin: 4px 0 8px; }
-  .clip .row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); align-items: center; }
-  .clip a { color: var(--accent-2); text-decoration: none; }
-  .section { margin-top: 24px; }
-  .fc-wrap { position: relative; display: inline-block; max-width: 100%; user-select: none; cursor: crosshair; }
-  .fc-wrap img { display: block; max-width: 100%; border-radius: 8px; }
-  .fc-box { position: absolute; border: 3px solid var(--accent); background: rgba(255,79,163,.15); pointer-events: none; }
-  .fc-controls { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-top: 10px; }
-  .fc-controls input { width: 190px; }
-  .select { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-            border-radius: 8px; padding: 9px 11px; font: inherit; }
-  .select.inline { width: auto; display: inline-block; }
-  .picked { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; color: var(--muted); }
-  .update-bar { margin: 16px 24px 0; padding: 12px 16px; border-radius: 10px; display: flex; gap: 12px;
-                align-items: center; flex-wrap: wrap; background: rgba(255,79,163,.08);
-                border: 1px solid rgba(255,79,163,.35); font-size: 14px; }
-  .update-bar.good { background: rgba(61,220,151,.08); border-color: rgba(61,220,151,.35); }
-  .update-bar .grow { flex: 1; min-width: 220px; }
-  .update-bar .btn { padding: 6px 12px; font-size: 13px; }
-  .update-bar a { color: var(--accent-2); }
-  .update-bar .bar { margin-top: 6px; }
-  @media (max-width: 900px) { .update-bar { margin: 12px 16px 0; } }
-  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
-  .switch input { width: 18px; height: 18px; accent-color: var(--accent); }
-  .setup { margin-bottom: 16px; border-color: var(--accent-2); }
-  .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
-  .req { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+
+  .notice { border-radius: 10px; padding: 12px 14px; margin-top: 18px; white-space: pre-wrap; font-size: 13.5px;
+            background: var(--danger-soft); color: var(--text); border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); }
+  .notice strong { color: var(--danger); }
+
+  .clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 18px; }
+  .clip { max-width: 260px; }
+  .clip video { width: 100%; aspect-ratio: 9/16; background: #000; display: block; border-radius: 14px;
+                box-shadow: var(--shadow); }
+  .clip .title { font-weight: 600; margin-top: 10px; line-height: 1.35; }
+  .clip .why { font-size: 13px; color: var(--text-2); margin: 4px 0 8px; }
+  .clip .row { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--text-2); }
+  .clip .save { color: var(--accent); font-weight: 600; text-decoration: none; padding: 4px 6px; margin: -4px -6px; border-radius: 6px; }
+  .clip .save:hover { background: var(--accent-soft); }
+  .score { color: var(--text); font-weight: 600; }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 1000px) { .options { grid-template-columns: 1fr; } }
+  .row-line { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .fc-wrap { position: relative; display: inline-block; max-width: 100%; user-select: none; cursor: crosshair; margin-top: 12px; }
+  .fc-wrap img { display: block; max-width: 100%; border-radius: 10px; }
+  .fc-box { position: absolute; border: 2px solid var(--accent); background: var(--accent-soft); border-radius: 4px; pointer-events: none; }
+  .fc-text { max-width: 220px; }
+
+  details.log { margin-top: 32px; }
+  details.log summary { cursor: pointer; color: var(--text-2); font-weight: 600; font-size: 13px; }
+  details.log pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+                    font: 12px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace; max-height: 320px; overflow: auto; white-space: pre-wrap; }
+
+  .empty { text-align: center; padding: 80px 20px; color: var(--text-2); }
+  .empty h1 { color: var(--text); margin-bottom: 6px; }
+
+  /* ---------- Setup + update banners ---------- */
+  .banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-radius: 12px; padding: 12px 16px;
+            margin-bottom: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 13.5px; }
+  .banner .grow { flex: 1; min-width: 220px; }
+  .banner .ok-mark { color: var(--done); font-weight: 700; }
+  .banner a { color: var(--accent); }
+  .setup { margin-bottom: 24px; }
+  .setup p { margin: 0 0 6px; color: var(--text-2); font-size: 13px; }
+  .req { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--line); }
   .req:first-of-type { border-top: 0; }
-  .req .icon { width: 20px; flex: none; text-align: center; font-weight: 700; }
-  .req .icon.ok { color: var(--ok); } .req .icon.no { color: var(--accent-2); }
-  .req .name { font-size: 14px; }
-  .req .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .req .btn { padding: 5px 10px; font-size: 13px; margin-top: 6px; }
-  .req a { color: var(--accent-2); }
-  details.log { margin-top: 24px; }
-  details.log summary { cursor: pointer; color: var(--muted); }
-  details.log pre { background: #0a0b0e; border: 1px solid var(--line); border-radius: 8px; padding: 12px;
-                    font-size: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; }
+  .req .icon { width: 20px; height: 20px; flex: none; border-radius: 50%; display: grid; place-items: center;
+               font-size: 12px; font-weight: 700; margin-top: 1px; }
+  .req .icon.ok { background: color-mix(in srgb, var(--done) 18%, transparent); color: var(--done); }
+  .req .icon.no { background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); }
+  .req .name { font-weight: 600; }
+  .req .opt { color: var(--text-2); font-weight: 400; }
+  .req .sub { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+  .req .btn { margin-top: 8px; }
+  .req a { color: var(--accent); font-weight: 600; display: inline-block; margin-top: 6px; }
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 8px 0 0; font-weight: 400; font-size: 13.5px; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+    .bar.indet > div { animation: none; width: 100% !important; opacity: .45; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1><span>GTA VI</span> Clipper</h1>
-  <p>Runs on this PC · clips are saved for you to review · nothing is ever posted</p>
-  <button class="btn ghost" id="setupToggle" style="margin-left:auto;padding:6px 12px;font-size:13px">Setup</button>
-</header>
-<div class="update-bar" id="updateBar" hidden></div>
-<main>
-  <section>
-    <div class="panel setup" id="setup" hidden></div>
-    <div class="panel">
-      <h2>New video</h2>
-      <form id="form">
-        <div class="seg" id="srcSeg">
-          <button type="button" data-v="url" class="on">Paste link</button>
-          <button type="button" data-v="file">Upload file</button>
-        </div>
-        <div id="urlBox">
-          <label for="url">YouTube or Twitch VOD link</label>
-          <input id="url" name="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
-        </div>
-        <div id="fileBox" hidden>
-          <label for="file">Video file</label>
-          <input id="file" name="file" type="file" accept=".mp4,.mkv,.mov,.webm,.avi">
-        </div>
-        <label for="creator">Creator's name</label>
-        <input id="creator" name="creator" required>
-        <label for="permission">Permission you have to use it</label>
-        <textarea id="permission" name="permission" required
-          placeholder="e.g. Creator emailed OK on 2026-11-20 to make Shorts from this video"></textarea>
-        <label>Layout</label>
-        <div class="seg" id="layoutSeg">
-          <button type="button" data-v="center" class="on">Center crop</button>
-          <button type="button" data-v="facecam">Facecam on top</button>
-        </div>
-        <div class="hint" id="layoutHint">You can switch layout and draw the facecam area after it downloads.</div>
-        <label for="picker">Pick moments with</label>
-        <select id="picker" class="select"></select>
-        <div class="hint" id="pickerHint"></div>
-        <button class="btn full" id="submit" type="submit">Make clips</button>
-        <div class="msg" id="formMsg"></div>
-      </form>
+<div class="app">
+  <aside class="sidebar" aria-label="Videos">
+    <div class="brand">
+      <img src="/favicon.png" alt="">
+      <span>GTA VI Clipper</span>
+      <button class="icon-btn" id="setupToggle" aria-pressed="false" aria-label="Setup" title="Setup">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+      </button>
     </div>
-    <div class="jobs" id="jobs"></div>
-  </section>
-  <section class="panel" id="detail"><div class="empty">Paste a link to get started.<br>Your videos and clips will show up here.</div></section>
-</main>
+    <button class="btn primary block" id="newBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      New video
+    </button>
+    <div class="side-label" id="jobsLabel">Videos</div>
+    <nav class="jobs" id="jobs"></nav>
+  </aside>
+
+  <main class="content" id="content">
+    <div class="content-inner">
+      <div id="updateBar" hidden></div>
+      <div class="card setup" id="setup" hidden></div>
+
+      <section class="new" id="newView" hidden>
+        <h1>New video</h1>
+        <p class="lede">Paste a link or choose a file. Clips are saved on this PC for you to review. Nothing is ever posted.</p>
+        <form id="form">
+          <div class="seg full" id="srcSeg" role="group" aria-label="Video source">
+            <button type="button" data-v="url" class="on">Paste link</button>
+            <button type="button" data-v="file">Upload file</button>
+          </div>
+          <div id="urlBox">
+            <label for="url">YouTube or Twitch VOD link</label>
+            <input id="url" name="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off">
+          </div>
+          <div id="fileBox" hidden>
+            <label for="file">Video file</label>
+            <input id="file" name="file" type="file" accept=".mp4,.mkv,.mov,.webm,.avi">
+          </div>
+          <label for="creator">Creator's name</label>
+          <input id="creator" name="creator" required>
+          <label for="permission">Permission you have to use it</label>
+          <textarea id="permission" name="permission" required
+            placeholder="e.g. Creator emailed OK on 2026-11-20 to make Shorts from this video"></textarea>
+          <label id="layoutLabel">Layout</label>
+          <div class="seg full" id="layoutSeg" role="group" aria-labelledby="layoutLabel">
+            <button type="button" data-v="center" class="on">Center crop</button>
+            <button type="button" data-v="facecam">Facecam on top</button>
+          </div>
+          <div class="hint">You can switch layout and mark the facecam after it downloads.</div>
+          <label for="picker">Pick moments with</label>
+          <select id="picker" class="select"></select>
+          <div class="hint" id="pickerHint"></div>
+          <button class="btn primary block" id="submit" type="submit">Make clips</button>
+          <div class="msg" id="formMsg" role="status"></div>
+        </form>
+      </section>
+
+      <section id="detail" hidden></section>
+    </div>
+  </main>
+</div>
 
 <script>
 const $ = (s, el = document) => el.querySelector(s);
@@ -168,6 +272,9 @@ const STEPS = [["download","Download"],["audio","Loud moments"],["transcribe","T
                ["rank","Pick moments"],["plan","Cut points"],["render","Render"]];
 const PICKER_NAMES = {auto: "Automatic", claude: "Claude", local: "Local AI", none: "No AI"};
 let pickers = {claude: false, local: false, none: true, auto_uses: "none"};
+let settings = {}, jobs = [], selected = null, detail = null, source = "url", layout = "center";
+let view = null;            // "new" or null (= show the selected video)
+let fcDraft = null, deleteArmed = false;
 
 function pickerOptions(selectedValue) {
   const p = pickers;
@@ -186,7 +293,9 @@ const PICKER_HINTS = {
 async function refreshPickers() {
   try { pickers = await api("/api/pickers"); } catch { return; }
   const sel = $("#picker");
-  let want = sel.value || localStorage.getItem("picker") || pickers.default || "auto";
+  let want = sel.value;
+  if (!want) { try { want = localStorage.getItem("picker"); } catch {} }
+  want = want || pickers.default || "auto";
   if (want !== "auto" && !pickers[want]) want = "auto";
   sel.innerHTML = pickerOptions(want);
   $("#pickerHint").textContent = PICKER_HINTS[sel.value] || "";
@@ -196,8 +305,6 @@ $("#picker").addEventListener("change", e => {
   try { localStorage.setItem("picker", e.target.value); } catch {}
   $("#pickerHint").textContent = PICKER_HINTS[e.target.value] || "";
 });
-let settings = {}, jobs = [], selected = null, detail = null, source = "url", layout = "center";
-let fcDraft = null, deleteArmed = false;
 
 async function api(path, opts = {}) {
   opts.headers = Object.assign({"x-clipper": "1"}, opts.headers || {});
@@ -206,16 +313,31 @@ async function api(path, opts = {}) {
   if (!r.ok) throw new Error(typeof body.detail === "string" ? body.detail : r.statusText);
   return body;
 }
+const post = (path, body) => api(path, {method: "POST", headers: {"content-type": "application/json"},
+                                         body: JSON.stringify(body || {})});
 
 function segment(el, onPick) {
   el.addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    el.querySelectorAll("button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
     onPick(b.dataset.v);
   });
 }
 segment($("#srcSeg"), v => { source = v; $("#urlBox").hidden = v !== "url"; $("#fileBox").hidden = v !== "file"; });
 segment($("#layoutSeg"), v => { layout = v; });
+
+// ---- views ----
+function showView() {
+  const isNew = view === "new" || !selected;
+  $("#newView").hidden = !isNew;
+  $("#detail").hidden = isNew;
+  $("#newBtn").setAttribute("aria-current", isNew ? "page" : "false");
+}
+$("#newBtn").addEventListener("click", () => {
+  view = "new"; showView(); renderJobs();
+  $("#content").scrollTop = 0;
+  (source === "url" ? $("#url") : $("#file")).focus();
+});
 
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
@@ -227,101 +349,122 @@ $("#form").addEventListener("submit", async e => {
   if (source === "url") fd.append("url", $("#url").value);
   else if ($("#file").files[0]) fd.append("file", $("#file").files[0]);
   $("#submit").disabled = true; $("#formMsg").className = "msg";
-  $("#formMsg").textContent = source === "file" ? "Uploading..." : "";
+  $("#formMsg").textContent = source === "file" ? "Uploading…" : "";
   try {
     const job = await api("/api/jobs", {method: "POST", body: fd});
-    $("#url").value = ""; $("#file").value = ""; $("#formMsg").textContent = "Added!";
-    selected = job.id; await refresh();
+    $("#url").value = ""; $("#file").value = ""; $("#formMsg").textContent = "";
+    selected = job.id; view = null; await refresh();
   } catch (err) { $("#formMsg").className = "msg err"; $("#formMsg").textContent = err.message; }
-  $("#submit").disabled = false;
+  $("#submit").disabled = !setupReady;
 });
 
-function statusPill(j) {
-  const label = {queued: "waiting", running: "working", done: "done", error: "needs attention"}[j.status] || j.status;
-  return `<span class="pill ${j.status}">${label}</span>`;
+// ---- sidebar list ----
+function statusText(j) {
+  if (j.status === "done") return `${j.clip_count} ${j.clip_count === 1 ? "clip" : "clips"}`;
+  if (j.status === "error") return "Needs attention";
+  if (j.status === "queued") return "Waiting";
+  const pct = j.progress != null ? ` · ${Math.round(j.progress * 100)}%` : "";
+  return (j.stage_label || "Working") + pct;
 }
 function progressBar(j) {
   if (j.status !== "running") return "";
-  const indet = j.progress == null;
-  return `<div class="bar ${indet ? "indet" : ""}"><div style="width:${(j.progress || 0) * 100}%"></div></div>`;
+  const indet = j.progress == null, pct = Math.round((j.progress || 0) * 100);
+  return `<div class="bar ${indet ? "indet" : ""}" role="progressbar" aria-label="${esc(j.stage_label || "Progress")}"
+            ${indet ? "" : `aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"`}><div style="width:${pct}%"></div></div>`;
 }
-
 function renderJobs() {
-  $("#jobs").innerHTML = jobs.map(j => `
-    <div class="job ${j.id === selected ? "sel" : ""}" data-id="${j.id}">
+  const isNew = view === "new" || !selected;
+  $("#jobsLabel").hidden = !jobs.length;
+  $("#jobs").innerHTML = jobs.length ? jobs.map(j => `
+    <button class="job" data-id="${j.id}" aria-current="${!isNew && j.id === selected}">
       <div class="t">${esc(j.title || j.source.url || j.source.filename)}</div>
-      <div class="s">${statusPill(j)} <span>${esc(j.status === "done" ? j.clip_count + " clips" : j.stage_label || "")}</span></div>
+      <div class="s"><span class="dot ${j.status}"></span><span class="num">${esc(statusText(j))}</span></div>
       ${progressBar(j)}
-    </div>`).join("");
+    </button>`).join("") : `<div class="side-empty">Your videos will appear here.</div>`;
 }
 $("#jobs").addEventListener("click", e => {
   const el = e.target.closest(".job"); if (!el) return;
-  selected = el.dataset.id; fcDraft = null; deleteArmed = false; refresh();
+  selected = el.dataset.id; view = null; fcDraft = null; deleteArmed = false; showView(); refresh();
 });
+
+// ---- detail ----
+function track(d) {
+  const idx = STEPS.findIndex(s => s[0] === d.stage);
+  let frac = d.status === "done" ? 1 : idx < 0 ? 0 : (idx + (d.progress || 0)) / STEPS.length;
+  const labels = STEPS.map(([k, label], i) =>
+    `<span class="${i === idx && d.status !== "done" ? "now" : ""}">${label}</span>`).join("");
+  return `<div class="track"><div class="line" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="100"
+            aria-valuenow="${Math.round(frac * 100)}"><div class="fill" style="width:${frac * 100}%;--fullw:${frac ? 100 / frac : 100}%"></div></div>
+          <div class="labels">${labels}</div></div>`;
+}
 
 function renderDetail() {
   lastDetailKey = detailKey();
   const d = detail, el = $("#detail");
-  if (!d) { el.innerHTML = `<div class="empty">Paste a link to get started.<br>Your videos and clips will show up here.</div>`; return; }
-  const idx = STEPS.findIndex(s => s[0] === d.stage);
-  const steps = STEPS.map(([k, label], i) => {
-    const cls = d.status === "done" || i < idx ? "done" : i === idx && d.status === "running" ? "now" : "";
-    return `<div class="step ${cls}">${label}</div>`;
-  }).join("");
+  if (!d) { el.innerHTML = ""; return; }
   const busy = d.status === "queued" || d.status === "running";
-  const src = d.source.url ? `<a href="${esc(d.source.url)}" target="_blank" rel="noopener" style="color:inherit">${esc(d.source.url)}</a>` : esc(d.source.filename);
+  const src = d.source.url ? `<a href="${esc(d.source.url)}" target="_blank" rel="noopener">${esc(d.source.url.replace(/^https?:\/\/(www\.)?/, ""))}</a>` : esc(d.source.filename);
   const v = d.video;
+  const hasPlan = d.plan && d.plan.length;
+  let status = "";
+  if (d.status === "running") status = `<div class="status"><strong>${esc(d.stage_label)}</strong>${d.progress_text ? " — " + esc(d.progress_text) : ""}</div>`;
+  if (d.status === "queued") status = `<div class="status">Waiting for the video ahead of it to finish.</div>`;
+  if (d.status === "done") status = `<div class="status"><strong>Done.</strong> ${d.clips.length} ${d.clips.length === 1 ? "clip" : "clips"} ready to review${d.picked_by ? ` · picked by ${esc(PICKER_NAMES[d.picked_by] || d.picked_by)}` : ""}.</div>`;
+
   el.innerHTML = `
-    <div class="detail-head">
-      <div>
-        <h3>${esc(d.title || "Video")}</h3>
-        <div class="meta">${src}${v ? ` · ${v.width}x${v.height} · ${mmss(v.duration)}` : ""}</div>
-        <div class="meta">Creator: ${esc(d.creator)} · Permission: ${esc(d.permission)}</div>
+    <div class="head">
+      <div style="min-width:0;flex:1">
+        <h1>${esc(d.title || "Video")}</h1>
+        <div class="meta">${src}${v ? ` · <span class="num">${v.width}×${v.height} · ${mmss(v.duration)}</span>` : ""}</div>
+        <div class="meta">${esc(d.creator)} · ${esc(d.permission)}</div>
       </div>
       <div class="actions">
-        ${d.status === "error" ? `<button class="btn" id="retry">Retry</button>` : ""}
-        ${d.clips.length ? `<button class="btn ghost" id="openFolder">Open folder</button>` : ""}
-        <button class="btn danger" id="del" ${busy ? "disabled" : ""}>${deleteArmed ? "Click again to delete" : "Delete"}</button>
+        ${d.status === "error" ? `<button class="btn primary" id="retry">Retry</button>` : ""}
+        ${d.clips.length ? `<button class="btn" id="openFolder">Open folder</button>` : ""}
+        <button class="btn quiet danger ${deleteArmed ? "armed" : ""}" id="del" ${busy ? "disabled" : ""}>${deleteArmed ? "Delete video and clips" : "Delete"}</button>
       </div>
     </div>
-    <div class="steps">${steps}</div>
-    ${d.status === "running" ? `<div class="meta">${esc(d.stage_label)}${d.progress_text ? " — " + esc(d.progress_text) : ""}</div>${progressBar(d)}` : ""}
-    ${d.status === "queued" ? `<div class="meta">Waiting for the video before it to finish.</div>` : ""}
-    ${d.status === "error" ? `<div class="error-box">${esc(d.error)}</div>` : ""}
-    ${d.clips.length ? `<div class="section"><h2>Clips to review (${d.clips.length})</h2><div class="clips">${d.clips.map(c => `
-      <div class="clip">
-        <video controls preload="metadata" src="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}?v=${encodeURIComponent(c.rendered_at)}"></video>
-        <div class="body">
-          <div class="title">${esc(c.title)}</div>
-          <div class="why">${esc(c.reason)}</div>
-          <div class="row"><span>${mmss(c.start)}–${mmss(c.end)} · ${(c.end - c.start).toFixed(0)}s · ${c.score}/10</span>
-            <a href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}" data-save="${esc(c.file)}">${window.pywebview ? "Save as…" : "Download"}</a></div>
-          ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
+    ${track(d)}
+    ${status}
+    ${d.status === "error" ? `<div class="notice" role="alert"><strong>Something went wrong.</strong> ${esc(d.error)}</div>` : ""}
+
+    ${d.clips.length ? `<div class="section"><h2>Clips <span class="num" style="color:var(--text-2);font-weight:400">${d.clips.length}</span></h2>
+      <div class="clips">${d.clips.map(c => `
+      <article class="clip">
+        <video controls preload="metadata" src="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}?v=${encodeURIComponent(c.rendered_at)}" aria-label="${esc(c.title)}"></video>
+        <div class="title">${esc(c.title)}</div>
+        <div class="why">${esc(c.reason)}</div>
+        <div class="row"><span class="num">${mmss(c.start)}–${mmss(c.end)} · ${(c.end - c.start).toFixed(0)}s · <span class="score">${c.score}</span>/10</span>
+          <a class="save" href="/api/jobs/${d.id}/clips/${encodeURIComponent(c.file)}" download="${esc(c.file)}" data-save="${esc(c.file)}">${window.pywebview ? "Save as…" : "Download"}</a></div>
+        ${c.cut_notes && c.cut_notes.length ? `<div class="hint">${esc(c.cut_notes.join("; "))}</div>` : ""}
+      </article>`).join("")}</div></div>` : ""}
+
+    ${v ? `<div class="section options">
+      ${!busy && ["rank", "plan", "render", "done"].includes(d.stage) ? `<div class="card"><h2>Moments</h2>
+        <div class="row-line">
+          <select class="select inline" id="repickSel" aria-label="Pick moments again with">${pickerOptions(d.picked_by === "claude" ? (pickers.local ? "local" : "none") : (pickers.claude ? "claude" : "none"))}</select>
+          <button class="btn" id="repick">Pick again</button>
         </div>
-      </div>`).join("")}</div></div>` : ""}
-    ${v && !busy && ["rank", "plan", "render", "done"].includes(d.stage) ? `<div class="section"><h2>Moments</h2>
-      <div class="picked">
-        ${d.picked_by ? `<span>Picked by <strong style="color:var(--text)">${esc(PICKER_NAMES[d.picked_by] || d.picked_by)}</strong>.</span>` : ""}
-        <span>Pick again with</span>
-        <select class="select inline" id="repickSel">${pickerOptions(d.picked_by === "claude" ? (pickers.local ? "local" : "none") : (pickers.claude ? "claude" : "none"))}</select>
-        <button class="btn ghost" id="repick">Pick again</button>
+        <div class="hint">Reuses the download and transcript, so only picking and rendering run again.</div>
+      </div>` : ""}
+      <div class="card"><h2 id="reLayoutLabel">Layout</h2>
+        <div class="row-line">
+          <div class="seg" id="reLayout" role="group" aria-labelledby="reLayoutLabel">
+            <button type="button" data-v="center" class="${(fcDraft?.layout || d.layout) === "center" ? "on" : ""}">Center crop</button>
+            <button type="button" data-v="facecam" class="${(fcDraft?.layout || d.layout) === "facecam" ? "on" : ""}">Facecam on top</button>
+          </div>
+          <button class="btn" id="rerender" ${busy || !hasPlan ? "disabled" : ""}>Re-render clips</button>
+        </div>
+        ${!hasPlan ? `<div class="hint">Available once the moments are picked.</div>` : ""}
+        <div id="fcArea" ${(fcDraft?.layout || d.layout) === "facecam" ? "" : "hidden"}>
+          <div class="hint">Drag a box around the facecam.</div>
+          <div class="fc-wrap" id="fcWrap"><img id="fcImg" src="/api/jobs/${d.id}/frame.jpg" alt="A frame from the video for marking the facecam" draggable="false"><div class="fc-box" id="fcBox"></div></div>
+          <label for="fcText">Facecam area (x, y, width, height)</label>
+          <input id="fcText" class="fc-text num" value="${esc((fcDraft?.facecam || d.facecam).join(", "))}">
+        </div>
       </div>
-      <div class="hint">The download and transcript are reused, so only the picking and rendering run again.</div>
     </div>` : ""}
-    ${v ? `<div class="section"><h2>Layout</h2>
-      <div class="seg" id="reLayout" style="max-width:360px">
-        <button type="button" data-v="center" class="${(fcDraft?.layout || d.layout) === "center" ? "on" : ""}">Center crop</button>
-        <button type="button" data-v="facecam" class="${(fcDraft?.layout || d.layout) === "facecam" ? "on" : ""}">Facecam on top</button>
-      </div>
-      <div id="fcArea" ${(fcDraft?.layout || d.layout) === "facecam" ? "" : "hidden"}>
-        <div class="hint" style="margin:10px 0">Drag a box around the facecam on this frame.</div>
-        <div class="fc-wrap" id="fcWrap"><img id="fcImg" src="/api/jobs/${d.id}/frame.jpg" alt="Frame from the video" draggable="false"><div class="fc-box" id="fcBox"></div></div>
-        <div class="fc-controls"><div><label for="fcText">Facecam area (x, y, width, height)</label>
-          <input id="fcText" value="${esc((fcDraft?.facecam || d.facecam).join(", "))}"></div></div>
-      </div>
-      <button class="btn ghost" id="rerender" style="margin-top:12px" ${busy || !(d.plan && d.plan.length) ? "disabled" : ""}>Re-render clips with this layout</button>
-      ${!(d.plan && d.plan.length) ? `<div class="hint">Available once Claude has picked the moments.</div>` : ""}
-    </div>` : ""}
+
     <details class="log"><summary>Activity log</summary><pre>${esc((d.log || []).map(l => `[${l.t}] ${l.msg}`).join("\n"))}</pre></details>`;
   wireDetail();
 }
@@ -338,14 +481,11 @@ function wireDetail() {
     if (saved) { const old = a.textContent; a.textContent = "Saved ✓"; setTimeout(() => (a.textContent = old), 2500); }
   }));
   $("#repick")?.addEventListener("click", async () => {
-    try {
-      await api(`/api/jobs/${d.id}/repick`, {method: "POST", headers: {"content-type": "application/json"},
-        body: JSON.stringify({picker: $("#repickSel").value})});
-      refresh();
-    } catch (e) { alertBox(e.message); }
+    try { await post(`/api/jobs/${d.id}/repick`, {picker: $("#repickSel").value}); refresh(); }
+    catch (e) { alertBox(e.message); }
   });
   $("#del")?.addEventListener("click", async () => {
-    if (!deleteArmed) { deleteArmed = true; renderDetail(); return; }
+    if (!deleteArmed) { deleteArmed = true; renderDetail(); setTimeout(() => { if (deleteArmed) { deleteArmed = false; renderDetail(); } }, 4000); return; }
     try { await api(`/api/jobs/${d.id}`, {method: "DELETE"}); selected = null; detail = null; } catch (e) { alertBox(e.message); }
     deleteArmed = false; refresh();
   });
@@ -356,11 +496,8 @@ function wireDetail() {
   });
   $("#rerender")?.addEventListener("click", async () => {
     const lay = fcDraft?.layout || d.layout;
-    try {
-      await api(`/api/jobs/${d.id}/rerender`, {method: "POST", headers: {"content-type": "application/json"},
-        body: JSON.stringify({layout: lay, facecam: $("#fcText")?.value || ""})});
-      fcDraft = null; refresh();
-    } catch (e) { alertBox(e.message); }
+    try { await post(`/api/jobs/${d.id}/rerender`, {layout: lay, facecam: $("#fcText")?.value || ""}); fcDraft = null; refresh(); }
+    catch (e) { alertBox(e.message); }
   });
   const img = $("#fcImg");
   if (!img) return;
@@ -399,8 +536,8 @@ function drawBox() {
 window.addEventListener("resize", drawBox);
 
 function alertBox(msg) {
-  const el = document.createElement("div"); el.className = "error-box"; el.textContent = msg;
-  $("#detail").prepend(el); setTimeout(() => el.remove(), 6000);
+  const el = document.createElement("div"); el.className = "notice"; el.setAttribute("role", "alert"); el.textContent = msg;
+  $(".content-inner").prepend(el); setTimeout(() => el.remove(), 6000);
 }
 
 // Only redraw the detail panel when something changed, so playing videos aren't interrupted.
@@ -409,20 +546,25 @@ const detailKey = () => JSON.stringify([pickers, detail?.id, detail?.status, det
   detail?.progress_text, detail?.clips?.map(c => c.rendered_at), detail?.log?.length, detail?.layout,
   detail?.facecam, detail?.video, deleteArmed]);
 
+let firstLoad = true;
 async function refresh() {
   try {
     jobs = await api("/api/jobs");
     if (selected && !jobs.some(j => j.id === selected)) selected = null;
-    if (!selected && jobs.length) selected = jobs[0].id;
+    if (!selected && jobs.length && view !== "new") selected = jobs[0].id;
+    if (firstLoad) { firstLoad = false; if (!jobs.length) view = "new"; }
     renderJobs();
-    detail = selected ? await api(`/api/jobs/${selected}`).catch(() => null) : null;
+    showView();
+    detail = selected && view !== "new" ? await api(`/api/jobs/${selected}`).catch(() => null) : null;
     if (detailKey() !== lastDetailKey) { lastDetailKey = detailKey(); renderDetail(); }
-  } catch (e) { /* server restarting: try again on the next tick */ }
+  } catch (e) { /* engine restarting: try again on the next tick */ }
 }
 
 // ---- setup checklist (shown until everything required is installed) ----
 let setupReady = true, setupKey = "", setupOpen = false, setupBusy = false;
-$("#setupToggle").addEventListener("click", () => { setupOpen = !setupOpen; setupKey = ""; refreshSetup(); });
+$("#setupToggle").addEventListener("click", () => {
+  setupOpen = !setupOpen; $("#setupToggle").setAttribute("aria-pressed", setupOpen); setupKey = ""; refreshSetup();
+});
 async function refreshSetup() {
   let s;
   try { s = await api("/api/setup"); } catch { return; }
@@ -433,41 +575,40 @@ async function refreshSetup() {
   const show = setupOpen || !s.ready || busy || s.items.some(i => !i.ok && i.action === "download" && i.required);
   const key = JSON.stringify([s, show, upd.auto, upd.current, upd.enabled]);
   $("#submit").disabled = !s.ready;
-  $("#submit").title = s.ready ? "" : "Finish the setup checklist first";
+  $("#submit").title = s.ready ? "" : "Finish the setup first";
   if (key === setupKey) return;
   setupKey = key;
   const el = $("#setup");
   el.hidden = !show;
   if (!show) return;
   el.innerHTML = `<h2>Setup</h2>
-    <p>${s.ready ? "Everything required is installed. Optional extras below." : "A few things are needed before the first video:"}</p>
+    <p>${s.ready ? "Everything required is installed. Optional extras:" : "A few things are needed before your first video."}</p>
     ${s.items.filter(i => !(i.ok && !i.job)).concat(s.items.filter(i => i.ok && !i.job)).map(i => {
       const j = i.job, running = j && j.state === "running";
       let action = "";
       if (!i.ok && i.action === "download" && !running)
-        action = `<button class="btn ghost" data-install="${i.id}">${j && j.state === "error" ? "Try again" : "Download"} (${esc(i.size)})</button>`;
+        action = `<button class="btn small" data-install="${i.id}">${j && j.state === "error" ? "Try again" : "Download"} · ${esc(i.size)}</button>`;
       if (!i.ok && i.action === "link")
-        action = `<a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.link_text || "How to install")}</a>`;
-      return `<div class="req"><div class="icon ${i.ok ? "ok" : "no"}">${i.ok ? "✓" : "!"}</div><div style="flex:1">
-        <div class="name">${esc(i.name)}${i.required ? "" : " <span class='hint'>(optional)</span>"}</div>
+        action = `<a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.link_text || "How to install")} →</a>`;
+      return `<div class="req"><div class="icon ${i.ok ? "ok" : "no"}" aria-hidden="true">${i.ok ? "✓" : ""}</div><div style="flex:1">
+        <div class="name">${esc(i.name)}${i.required ? "" : " <span class='opt'>· optional</span>"}${i.ok ? "<span class='opt'> · installed</span>" : ""}</div>
         ${i.help && !i.ok ? `<div class="sub">${esc(i.help)}</div>` : ""}
-        ${running ? `<div class="sub">${esc(j.text)}</div><div class="bar"><div style="width:${(j.progress || 0) * 100}%"></div></div>` : ""}
-        ${j && j.state === "error" ? `<div class="sub" style="color:var(--err)">${esc(j.text)}</div>` : ""}
+        ${running ? `<div class="sub num">${esc(j.text)}</div>${progressBar({status: "running", progress: j.progress, stage_label: i.name})}` : ""}
+        ${j && j.state === "error" ? `<div class="sub" style="color:var(--danger)">${esc(j.text)}</div>` : ""}
         ${action}</div></div>`;
     }).join("")}
-    ${upd.enabled ? `<div class="req"><div class="icon ok">↻</div><div style="flex:1">
-      <div class="name">Updates <span class="hint">· you have v${esc(upd.current)}</span></div>
-      <label class="switch" style="margin-top:6px"><input type="checkbox" id="autoUpd" ${upd.auto ? "checked" : ""}>
+    ${upd.enabled ? `<div class="req"><div class="icon ok" aria-hidden="true">↻</div><div style="flex:1">
+      <div class="name">Updates <span class="opt">· you have v${esc(upd.current)}</span></div>
+      <label class="switch"><input type="checkbox" id="autoUpd" ${upd.auto ? "checked" : ""}>
         Install updates automatically when I close the app</label>
-      <button class="btn ghost" id="checkUpd" style="margin-top:8px">Check for updates</button></div></div>` : ""}`;
+      <button class="btn small" id="checkUpd" style="margin-top:10px">Check for updates</button></div></div>` : ""}`;
   $("#autoUpd")?.addEventListener("change", async e => {
-    await api("/api/update/auto", {method: "POST", headers: {"content-type": "application/json"},
-      body: JSON.stringify({on: e.target.checked})}).catch(err => alertBox(err.message));
+    await post("/api/update/auto", {on: e.target.checked}).catch(err => alertBox(err.message));
     refreshUpdate();
   });
   $("#checkUpd")?.addEventListener("click", async e => {
-    e.target.disabled = true; e.target.textContent = "Checking...";
-    const st = await api("/api/update/check", {method: "POST"}).catch(() => null);
+    e.target.disabled = true; e.target.textContent = "Checking…";
+    const st = await post("/api/update/check").catch(() => null);
     e.target.disabled = false;
     e.target.textContent = st && !st.available ? "You're up to date ✓" : "Check for updates";
     refreshUpdate();
@@ -479,10 +620,8 @@ async function refreshSetup() {
   }));
 }
 
-// ---- updates banner (installed app only) ----
+// ---- update banner (installed app only) ----
 let upd = {enabled: false}, updKey = "", updConfirmBusy = false;
-const post = (path, body) => api(path, {method: "POST", headers: {"content-type": "application/json"},
-                                         body: JSON.stringify(body || {})});
 async function refreshUpdate() {
   try { upd = await api("/api/update"); } catch { return; }
   const key = JSON.stringify([upd, updConfirmBusy]);
@@ -490,33 +629,32 @@ async function refreshUpdate() {
   updKey = key;
   const el = $("#updateBar");
   const ju = upd.just_updated;
-  let html = "", good = false;
+  let html = "";
   if (ju) {
-    good = true;
-    html = `<div class="grow"><strong>Updated to v${esc(ju.to)}</strong> (from v${esc(ju.from)}). ✓
-      ${ju.offer_auto ? "<br>Want future updates to install by themselves when you close the app?" : ""}</div>
-      ${ju.offer_auto ? `<button class="btn" data-u="auto-on">Turn on automatic updates</button>
-                         <button class="btn ghost" data-u="dismiss">No thanks</button>`
-                      : `<button class="btn ghost" data-u="dismiss">OK</button>`}`;
+    html = `<div class="grow"><span class="ok-mark">✓</span> <strong>Updated to v${esc(ju.to)}.</strong>
+      ${ju.offer_auto ? " Want future updates to install by themselves when you close the app?" : ""}</div>
+      ${ju.offer_auto ? `<button class="btn primary small" data-u="auto-on">Turn on automatic updates</button>
+                         <button class="btn quiet small" data-u="dismiss">No thanks</button>`
+                      : `<button class="btn quiet small" data-u="dismiss">OK</button>`}`;
   } else if (upd.state === "downloading") {
-    html = `<div class="grow">${esc(upd.text)}<div class="bar ${upd.progress == null ? "indet" : ""}"><div style="width:${(upd.progress || 0) * 100}%"></div></div></div>`;
+    html = `<div class="grow num">${esc(upd.text)}${progressBar({status: "running", progress: upd.progress, stage_label: "Downloading update"})}</div>`;
   } else if (upd.state === "installing") {
     html = `<div class="grow">${esc(upd.text)}</div>`;
   } else if (upd.state === "ready" && upd.auto) {
-    html = `<div class="grow">v${esc(upd.latest)} is downloaded. It installs automatically when you close the app.</div>
-      <button class="btn ghost" data-u="install">Install now</button>`;
+    html = `<div class="grow">v${esc(upd.latest)} is downloaded and installs when you close the app.</div>
+      <button class="btn small" data-u="install">Install now</button>`;
   } else if (upd.state === "error") {
-    html = `<div class="grow" style="color:var(--err)">${esc(upd.error)}</div><button class="btn ghost" data-u="install">Try again</button>`;
+    html = `<div class="grow" style="color:var(--danger)">${esc(upd.error)}</div><button class="btn small" data-u="install">Try again</button>`;
   } else if (upd.available && updConfirmBusy) {
-    html = `<div class="grow">A video is still being processed. Updating now stops it; you can press Retry after the update to continue.</div>
-      <button class="btn" data-u="force">Update anyway</button><button class="btn ghost" data-u="later">Later</button>`;
+    html = `<div class="grow">A video is still being processed. Updating now stops it; press Retry after the update to continue.</div>
+      <button class="btn primary small" data-u="force">Update anyway</button><button class="btn quiet small" data-u="later">Later</button>`;
   } else if (upd.available) {
-    html = `<div class="grow"><strong>GTA VI Clipper v${esc(upd.latest)}</strong> is available (you have v${esc(upd.current)}).
-      ${upd.notes_url ? `<a href="${esc(upd.notes_url)}" target="_blank" rel="noopener">What's new</a>` : ""}</div>
-      <button class="btn" data-u="install">Update now</button>`;
+    html = `<div class="grow"><strong>Version ${esc(upd.latest)} is available.</strong> You have ${esc(upd.current)}.
+      ${upd.notes_url ? ` <a href="${esc(upd.notes_url)}" target="_blank" rel="noopener">What's new</a>` : ""}</div>
+      <button class="btn primary small" data-u="install">Update now</button>`;
   }
   el.hidden = !html;
-  el.className = "update-bar" + (good ? " good" : "");
+  el.className = "banner";
   el.innerHTML = html;
   el.querySelectorAll("[data-u]").forEach(b => b.addEventListener("click", async () => {
     const what = b.dataset.u;
