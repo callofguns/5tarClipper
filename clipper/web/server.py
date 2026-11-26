@@ -29,6 +29,10 @@ def create_app(cfg: dict) -> FastAPI:
     vcfg = cfg["video"]
     app.state.store = store
     app.state.on_focus = None         # set by the Windows app to bring its window to the front
+    from clipper.live.auth import LoginNeeded
+    from clipper.live.manager import LiveManager
+    live = LiveManager(cfg)
+    app.state.live = live
 
     @app.middleware("http")
     async def require_app_header(request: Request, call_next):
@@ -265,6 +269,83 @@ def create_app(cfg: dict) -> FastAPI:
         folder = clip_folder(job_or_404(job_id))
         if not folder.exists():
             raise HTTPException(404, "No clips folder yet.")
+        os.startfile(folder)  # opens File Explorer on this PC
+        return {"ok": True}
+
+    # ---- live mode (Twitch) ----
+    @app.get("/api/live")
+    def live_status():
+        live.ensure_bot_known()
+        return live.status()
+
+    class ClientId(BaseModel):
+        client_id: str
+
+    @app.post("/api/live/client-id")
+    def live_client_id(body: ClientId):
+        if live.running:
+            raise HTTPException(409, "Stop live mode first.")
+        try:
+            live.auth.set_client_id(body.client_id)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        live.bot = None
+        return live.status()
+
+    @app.post("/api/live/login")
+    def live_login():
+        try:
+            live.auth.start_login()
+        except LoginNeeded as e:
+            raise HTTPException(400, str(e)) from e
+        except Exception as e:
+            raise HTTPException(502, f"Couldn't reach Twitch ({type(e).__name__}). Check your internet.") from e
+        live.error = None
+        return live.status()
+
+    @app.post("/api/live/login/cancel")
+    def live_login_cancel():
+        live.auth.cancel_login()
+        return live.status()
+
+    @app.post("/api/live/logout")
+    def live_logout():
+        live.logout()
+        return live.status()
+
+    class Channel(BaseModel):
+        channel: str
+
+    @app.post("/api/live/channels")
+    def live_add_channel(body: Channel):
+        try:
+            live.add_channel(body.channel)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        return live.status()
+
+    @app.delete("/api/live/channels/{login}")
+    def live_remove_channel(login: str):
+        live.remove_channel(login)
+        return live.status()
+
+    @app.post("/api/live/start")
+    def live_start():
+        try:
+            live.start()
+        except (LoginNeeded, ValueError) as e:
+            raise HTTPException(400, str(e)) from e
+        return live.status()
+
+    @app.post("/api/live/stop")
+    def live_stop():
+        live.stop()
+        return live.status()
+
+    @app.post("/api/live/open-log")
+    def live_open_log():
+        folder = live.csv_path.parent
+        folder.mkdir(parents=True, exist_ok=True)
         os.startfile(folder)  # opens File Explorer on this PC
         return {"ok": True}
 

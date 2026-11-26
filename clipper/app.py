@@ -127,6 +127,9 @@ def main() -> None:
                 "A video is still being processed. If you quit now it stops, "
                 "and you can press Retry next time to continue where it left off."):
             return False
+        if not busy and app.state.live.running and not window.create_confirmation_dialog(
+                "Quit 5tarClipper?", "Live mode is watching Twitch chat. Quitting stops it."):
+            return False
         updater.install_on_exit_if_ready()       # automatic updates install as the app closes
         return True
     window.events.closing += on_closing
