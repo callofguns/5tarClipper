@@ -85,6 +85,17 @@
             border-radius: 8px; padding: 9px 11px; font: inherit; }
   .select.inline { width: auto; display: inline-block; }
   .picked { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .update-bar { margin: 16px 24px 0; padding: 12px 16px; border-radius: 10px; display: flex; gap: 12px;
+                align-items: center; flex-wrap: wrap; background: rgba(255,79,163,.08);
+                border: 1px solid rgba(255,79,163,.35); font-size: 14px; }
+  .update-bar.good { background: rgba(61,220,151,.08); border-color: rgba(61,220,151,.35); }
+  .update-bar .grow { flex: 1; min-width: 220px; }
+  .update-bar .btn { padding: 6px 12px; font-size: 13px; }
+  .update-bar a { color: var(--accent-2); }
+  .update-bar .bar { margin-top: 6px; }
+  @media (max-width: 900px) { .update-bar { margin: 12px 16px 0; } }
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+  .switch input { width: 18px; height: 18px; accent-color: var(--accent); }
   .setup { margin-bottom: 16px; border-color: var(--accent-2); }
   .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
   .req { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -107,6 +118,7 @@
   <p>Runs on this PC · clips are saved for you to review · nothing is ever posted</p>
   <button class="btn ghost" id="setupToggle" style="margin-left:auto;padding:6px 12px;font-size:13px">Setup</button>
 </header>
+<div class="update-bar" id="updateBar" hidden></div>
 <main>
   <section>
     <div class="panel setup" id="setup" hidden></div>
@@ -419,7 +431,7 @@ async function refreshSetup() {
   if (setupBusy && !busy) refreshPickers();       // something just finished installing
   setupBusy = busy;
   const show = setupOpen || !s.ready || busy || s.items.some(i => !i.ok && i.action === "download" && i.required);
-  const key = JSON.stringify([s, show]);
+  const key = JSON.stringify([s, show, upd.auto, upd.current, upd.enabled]);
   $("#submit").disabled = !s.ready;
   $("#submit").title = s.ready ? "" : "Finish the setup checklist first";
   if (key === setupKey) return;
@@ -442,13 +454,95 @@ async function refreshSetup() {
         ${running ? `<div class="sub">${esc(j.text)}</div><div class="bar"><div style="width:${(j.progress || 0) * 100}%"></div></div>` : ""}
         ${j && j.state === "error" ? `<div class="sub" style="color:var(--err)">${esc(j.text)}</div>` : ""}
         ${action}</div></div>`;
-    }).join("")}`;
+    }).join("")}
+    ${upd.enabled ? `<div class="req"><div class="icon ok">↻</div><div style="flex:1">
+      <div class="name">Updates <span class="hint">· you have v${esc(upd.current)}</span></div>
+      <label class="switch" style="margin-top:6px"><input type="checkbox" id="autoUpd" ${upd.auto ? "checked" : ""}>
+        Install updates automatically when I close the app</label>
+      <button class="btn ghost" id="checkUpd" style="margin-top:8px">Check for updates</button></div></div>` : ""}`;
+  $("#autoUpd")?.addEventListener("change", async e => {
+    await api("/api/update/auto", {method: "POST", headers: {"content-type": "application/json"},
+      body: JSON.stringify({on: e.target.checked})}).catch(err => alertBox(err.message));
+    refreshUpdate();
+  });
+  $("#checkUpd")?.addEventListener("click", async e => {
+    e.target.disabled = true; e.target.textContent = "Checking...";
+    const st = await api("/api/update/check", {method: "POST"}).catch(() => null);
+    e.target.disabled = false;
+    e.target.textContent = st && !st.available ? "You're up to date ✓" : "Check for updates";
+    refreshUpdate();
+  });
   el.querySelectorAll("[data-install]").forEach(b => b.addEventListener("click", async () => {
     b.disabled = true;
     await api(`/api/setup/${b.dataset.install}/install`, {method: "POST"}).catch(e => alertBox(e.message));
     refreshSetup();
   }));
 }
+
+// ---- updates banner (installed app only) ----
+let upd = {enabled: false}, updKey = "", updConfirmBusy = false;
+const post = (path, body) => api(path, {method: "POST", headers: {"content-type": "application/json"},
+                                         body: JSON.stringify(body || {})});
+async function refreshUpdate() {
+  try { upd = await api("/api/update"); } catch { return; }
+  const key = JSON.stringify([upd, updConfirmBusy]);
+  if (key === updKey) return;
+  updKey = key;
+  const el = $("#updateBar");
+  const ju = upd.just_updated;
+  let html = "", good = false;
+  if (ju) {
+    good = true;
+    html = `<div class="grow"><strong>Updated to v${esc(ju.to)}</strong> (from v${esc(ju.from)}). ✓
+      ${ju.offer_auto ? "<br>Want future updates to install by themselves when you close the app?" : ""}</div>
+      ${ju.offer_auto ? `<button class="btn" data-u="auto-on">Turn on automatic updates</button>
+                         <button class="btn ghost" data-u="dismiss">No thanks</button>`
+                      : `<button class="btn ghost" data-u="dismiss">OK</button>`}`;
+  } else if (upd.state === "downloading") {
+    html = `<div class="grow">${esc(upd.text)}<div class="bar ${upd.progress == null ? "indet" : ""}"><div style="width:${(upd.progress || 0) * 100}%"></div></div></div>`;
+  } else if (upd.state === "installing") {
+    html = `<div class="grow">${esc(upd.text)}</div>`;
+  } else if (upd.state === "ready" && upd.auto) {
+    html = `<div class="grow">v${esc(upd.latest)} is downloaded. It installs automatically when you close the app.</div>
+      <button class="btn ghost" data-u="install">Install now</button>`;
+  } else if (upd.state === "error") {
+    html = `<div class="grow" style="color:var(--err)">${esc(upd.error)}</div><button class="btn ghost" data-u="install">Try again</button>`;
+  } else if (upd.available && updConfirmBusy) {
+    html = `<div class="grow">A video is still being processed. Updating now stops it; you can press Retry after the update to continue.</div>
+      <button class="btn" data-u="force">Update anyway</button><button class="btn ghost" data-u="later">Later</button>`;
+  } else if (upd.available) {
+    html = `<div class="grow"><strong>GTA VI Clipper v${esc(upd.latest)}</strong> is available (you have v${esc(upd.current)}).
+      ${upd.notes_url ? `<a href="${esc(upd.notes_url)}" target="_blank" rel="noopener">What's new</a>` : ""}</div>
+      <button class="btn" data-u="install">Update now</button>`;
+  }
+  el.hidden = !html;
+  el.className = "update-bar" + (good ? " good" : "");
+  el.innerHTML = html;
+  el.querySelectorAll("[data-u]").forEach(b => b.addEventListener("click", async () => {
+    const what = b.dataset.u;
+    b.disabled = true;
+    try {
+      if (what === "auto-on") await post("/api/update/auto", {on: true});
+      if (what === "dismiss") await post("/api/update/dismiss");
+      if (what === "later") updConfirmBusy = false;
+      if (what === "install" || what === "force") {
+        updConfirmBusy = false;
+        await post("/api/update/install", {force: what === "force"});
+      }
+    } catch (e) {
+      if (e.message === "busy") updConfirmBusy = true; else alertBox(e.message);
+    }
+    updKey = ""; refreshUpdate(); setupKey = ""; refreshSetup();
+  }));
+}
+let lastUpdCheck = 0;
+(async function updateLoop() {
+  if (["downloading", "installing"].includes(upd.state) || Date.now() - lastUpdCheck > 30000) {
+    lastUpdCheck = Date.now();
+    await refreshUpdate();
+  }
+  setTimeout(updateLoop, 1000);
+})();
 
 // The Windows app injects window.pywebview slightly after the page loads: redraw once it's there.
 window.addEventListener("pywebviewready", () => { lastDetailKey = ""; refresh(); });

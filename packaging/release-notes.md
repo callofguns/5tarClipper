@@ -1,6 +1,6 @@
 ## Download
 
-**[GTA6-Clipper-Setup.exe](https://github.com/callofguns/gta6-clipper/releases/latest/download/GTA6-Clipper-Setup.exe)** for Windows (64-bit). No admin rights needed.
+**[GTA6-Clipper-Setup.exe](https://github.com/callofguns/GTA6-Clipper/releases/latest/download/GTA6-Clipper-Setup.exe)** for Windows (64-bit). No admin rights needed.
 
 The app runs in its own window. On first launch it shows a **Setup** checklist. Use it to download FFmpeg, a YouTube helper and, optionally, NVIDIA GPU files for faster transcription and a free local AI model.
 

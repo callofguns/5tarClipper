@@ -29,6 +29,12 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
+      - name: Stamp the version into the app (used by the update checker)
+        shell: bash
+        run: |
+          echo "VERSION = \"${GITHUB_REF_NAME#v}\"" > clipper/_version.py
+          cat clipper/_version.py
+
       - name: Build the app with PyInstaller
         run: python -m PyInstaller packaging/gta6clipper.spec --noconfirm --clean
 

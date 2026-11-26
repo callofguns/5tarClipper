@@ -110,15 +110,27 @@ def main() -> None:
         window.on_top = False
     app.state.on_focus = bring_to_front
 
+    from clipper import updater
+    quitting_for_update = threading.Event()
+
+    def quit_for_update():
+        quitting_for_update.set()
+        window.destroy()
+    updater.set_quit_hook(quit_for_update)
+
     def on_closing():
-        busy = any(j["status"] in ("queued", "running") for j in store.all())
-        if not busy:
+        if quitting_for_update.is_set():         # the update asked us to close
             return True
-        return window.create_confirmation_dialog(
-            "Quit GTA VI Clipper?",
-            "A video is still being processed. If you quit now it stops, "
-            "and you can press Retry next time to continue where it left off.")
+        busy = any(j["status"] in ("queued", "running") for j in store.all())
+        if busy and not window.create_confirmation_dialog(
+                "Quit GTA VI Clipper?",
+                "A video is still being processed. If you quit now it stops, "
+                "and you can press Retry next time to continue where it left off."):
+            return False
+        updater.install_on_exit_if_ready()       # automatic updates install as the app closes
+        return True
     window.events.closing += on_closing
+    updater.startup()
 
     webview.settings["SHOW_DEFAULT_MENUS"] = False   # no browser-style right-click menu
     webview.settings["ALLOW_DOWNLOADS"] = True

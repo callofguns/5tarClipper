@@ -11,7 +11,7 @@ AppId={{6B1E3F2A-9C4D-4E8B-A7F1-2D5C8E9B0A13}
 AppName=GTA VI Clipper
 AppVersion={#AppVersion}
 AppPublisher=callofguns
-AppPublisherURL=https://github.com/callofguns/gta6-clipper
+AppPublisherURL=https://github.com/callofguns/GTA6-Clipper
 DefaultDirName={localappdata}\Programs\GTA6 Clipper
 DefaultGroupName=GTA VI Clipper
 DisableProgramGroupPage=yes
@@ -42,7 +42,15 @@ Name: "{userdesktop}\GTA VI Clipper"; Filename: "{app}\GTA6 Clipper.exe"; Tasks:
 
 [Run]
 Filename: "{app}\GTA6 Clipper.exe"; Description: "Start GTA VI Clipper now"; Flags: nowait postinstall skipifsilent
+; One-click updates run the installer silently with /RELAUNCH=1 so the app reopens afterwards
+Filename: "{app}\GTA6 Clipper.exe"; Flags: nowait; Check: RelaunchAfterUpdate
 
 [UninstallDelete]
 ; Settings, caches and downloaded tools (FFmpeg, Deno, GPU files). Your clips in Videos are kept.
 Type: filesandordirs; Name: "{localappdata}\GTA6 Clipper"
+
+[Code]
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;

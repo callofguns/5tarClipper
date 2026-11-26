@@ -55,6 +55,47 @@ def create_app(cfg: dict) -> FastAPI:
     def index():
         return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-store"})
 
+    # ---- updates (installed app only) ----
+    @app.get("/api/update")
+    def update_status():
+        from clipper import updater
+        return updater.status()
+
+    @app.post("/api/update/check")
+    def update_check():
+        from clipper import updater
+        updater.check_now()
+        return updater.status()
+
+    class UpdateInstall(BaseModel):
+        force: bool = False
+
+    @app.post("/api/update/install")
+    def update_install(body: UpdateInstall):
+        from clipper import updater
+        st = updater.status()
+        if not st["enabled"] or not st["available"]:
+            raise HTTPException(409, "There's no update to install.")
+        if not body.force and any(j["status"] in ("queued", "running") for j in store.all()):
+            raise HTTPException(409, "busy")
+        updater.start_download(install_after=True)
+        return updater.status()
+
+    class AutoUpdate(BaseModel):
+        on: bool
+
+    @app.post("/api/update/auto")
+    def update_auto(body: AutoUpdate):
+        from clipper import updater
+        updater.set_auto(body.on)
+        return updater.status()
+
+    @app.post("/api/update/dismiss")
+    def update_dismiss():
+        from clipper import updater
+        updater.dismiss_prompt()
+        return updater.status()
+
     @app.post("/api/focus")
     def focus():
         """Opening the app a second time asks the running one to show its window."""
