@@ -85,7 +85,7 @@ The **Live** page watches Twitch channels while they're live in GTA VI and notes
 
 One-time setup:
 1. Turn on two-factor authentication on your main Twitch account.
-2. Register an app at https://dev.twitch.tv/console/apps/create: any unique name, OAuth Redirect URL `http://localhost`, Category *Application Integration*, Client Type **Public**. Copy its **Client ID** into the Live page. (No client secret is needed or used.)
+2. Register an app at https://dev.twitch.tv/console/apps/create: any unique name, OAuth Redirect URL `https://localhost` (not used by 5tarClipper; Twitch only accepts HTTPS addresses), Category *Application Integration*, Client Type **Public**. Copy its **Client ID** into the Live page. (No client secret is needed or used.)
 3. Press **Log in to Twitch** and approve the code while signed in to Twitch as your **bot account**. It asks for `user:read:chat` (read chat) and `clips:edit` (for the clipping update).
 4. Add channels and press **Start watching**.
 
