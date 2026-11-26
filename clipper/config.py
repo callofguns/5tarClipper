@@ -3,18 +3,50 @@
 Two ways the app runs:
 - From the source code (developer): everything lives in the project folder.
 - As the installed Windows app: settings, caches and tools live in
-  %LOCALAPPDATA%\\GTA6 Clipper, and clips go to your Videos folder.
+  %LOCALAPPDATA%\\5tarClipper, and clips go to Videos\\5tarClipper.
+
+The app used to be called "GTA VI Clipper" and used folders named "GTA6 Clipper". On first launch
+after the rename, those folders are moved to the new names so nothing is lost or re-downloaded.
 """
 import os
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import yaml
 
+APP_NAME = "5tarClipper"
+OLD_FOLDER_NAME = "GTA6 Clipper"                # before v0.5: keep moving people's data across
 FROZEN = getattr(sys, "frozen", False)          # True inside the installed .exe
 CODE_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-DATA_ROOT = (Path(os.environ.get("LOCALAPPDATA", Path.home())) / "GTA6 Clipper") if FROZEN else CODE_ROOT
+
+
+def move_old_folder(old: Path, new: Path, tries: int = 20) -> Path:
+    """Rename old -> new if only the old one exists. Returns the folder to use.
+
+    Right after an update, the installer may still be closing for a few seconds and keep a file
+    open in the old folder, so retry for ~10 s; if it's still busy, keep using the old folder for
+    now and try again next launch."""
+    if new.exists() or not old.exists():
+        return new
+    for _ in range(tries):
+        try:
+            old.rename(new)
+            return new
+        except OSError:
+            time.sleep(0.5)
+    return old
+
+
+def _data_root() -> Path:
+    if not FROZEN:
+        return CODE_ROOT
+    base = Path(os.environ.get("LOCALAPPDATA", Path.home()))
+    return move_old_folder(base / OLD_FOLDER_NAME, base / APP_NAME)
+
+
+DATA_ROOT = _data_root()
 CONFIG_PATH = DATA_ROOT / "config.yaml"
 
 # Kept for older imports
@@ -50,7 +82,11 @@ def load_config(path: Path = CONFIG_PATH) -> dict:
     if video["picker"] not in ("auto", "claude", "local", "none"):
         raise ConfigError("video.picker must be auto, claude, local or none.")
     if not video.get("output_folder"):
-        video["output_folder"] = str(Path.home() / "Videos" / "GTA6 Clipper") if FROZEN else "output/review"
+        if FROZEN:
+            videos = Path.home() / "Videos"
+            video["output_folder"] = str(move_old_folder(videos / OLD_FOLDER_NAME, videos / APP_NAME, tries=1))
+        else:
+            video["output_folder"] = "output/review"
     return cfg
 
 

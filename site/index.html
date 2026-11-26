@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTA VI Clipper</title>
+<title>5tarClipper</title>
 <meta name="description" content="A free Windows app that turns long GTA VI gameplay videos into vertical, captioned 1080x1920 clips. Runs on your own PC and never posts anything.">
 <link rel="icon" href="img/icon.png">
 <meta name="color-scheme" content="dark">
@@ -31,6 +31,7 @@
   .grad { background: linear-gradient(90deg, var(--accent), var(--accent-2));
           -webkit-background-clip: text; background-clip: text; color: transparent; }
   header.hero { padding: 56px 0 36px; text-align: center; }
+  @media (max-width: 600px) { br.wide { display: none; } }
   .hero h1 { font-size: clamp(34px, 6vw, 58px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.5px; }
   .hero p.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 680px; margin: 0 auto 30px; }
   /* Solid Vice pink with dark text: 6.6:1 (white on the old gradient was 2.57:1 at its orange end). */
@@ -46,7 +47,7 @@
   .shot img { display: block; width: 100%; height: auto; }
   .caption { font-size: 13px; color: var(--muted); text-align: center; margin-top: 10px; }
   section { padding: 64px 0 8px; }
-  h2 { font-size: clamp(24px, 3.4vw, 32px); margin: 0 0 10px; }
+  h2 { font-size: clamp(24px, 3.4vw, 32px); line-height: 1.2; margin: 0 0 10px; }
   .section-lead { color: var(--muted); margin: 0 0 28px; max-width: 700px; }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; counter-reset: s; }
   @media (max-width: 820px) { .steps { grid-template-columns: repeat(2, 1fr); } }
@@ -60,8 +61,8 @@
   .split { display: grid; grid-template-columns: 1.15fr 1fr; gap: 36px; align-items: center; }
   .split.rev { grid-template-columns: 1fr 1.15fr; }
   @media (max-width: 820px) { .split, .split.rev { grid-template-columns: 1fr; } }
-  .split img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
-  .split .narrow { max-width: 320px; margin: 0 auto; }
+  .split img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; height: auto; }   /* height:auto keeps the real shape (no stretching) */
+  .split .narrow { max-width: 420px; margin: 0 auto; }
   ul.checks { list-style: none; padding: 0; margin: 0; }
   ul.checks li { padding: 8px 0 8px 30px; position: relative; color: var(--muted); }
   ul.checks li strong { color: var(--text); font-weight: 600; }
@@ -88,21 +89,21 @@
 <div class="wrap">
   <nav>
     <img src="img/icon.png" alt="">
-    <span class="name">GTA VI Clipper</span>
+    <span class="name">5tarClipper</span>
     <span class="spacer"></span>
-    <a class="gh" href="https://github.com/callofguns/GTA6-Clipper">Source on GitHub →</a>
+    <a class="gh" href="https://github.com/callofguns/5tarClipper">Source on GitHub →</a>
   </nav>
 
   <header class="hero">
-    <h1>Turn long <span class="grad">GTA VI</span> videos<br>into vertical clips</h1>
-    <p class="lead">Paste a YouTube or Twitch VOD link. GTA VI Clipper finds the funniest, loudest and most chaotic moments, then cuts them into 1080x1920 clips with big captions, ready for Shorts, TikTok or Reels. Works out of the box; add Claude or a free local AI for smarter picks.</p>
-    <a class="cta" href="https://github.com/callofguns/GTA6-Clipper/releases/latest/download/GTA6-Clipper-Setup.exe">
+    <h1>Turn long <span class="grad">GTA VI</span> videos <br class="wide">into vertical clips</h1>
+    <p class="lead">Paste a YouTube or Twitch VOD link. 5tarClipper finds the funniest, loudest and most chaotic moments, then cuts them into 1080x1920 clips with big captions, ready for Shorts, TikTok or Reels. Works out of the box; add Claude or a free local AI for smarter picks.</p>
+    <a class="cta" href="https://github.com/callofguns/5tarClipper/releases/latest/download/5tarClipper-Setup.exe">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16"/></svg>
       Download for Windows
     </a>
-    <div class="sub-cta">Free · Windows 64-bit · about 90 MB · <a href="https://github.com/callofguns/GTA6-Clipper/releases">all releases</a></div>
+    <div class="sub-cta">Free · Windows 64-bit · about 90 MB · <a href="https://github.com/callofguns/5tarClipper/releases">all releases</a></div>
 
-    <div class="shot"><img src="img/clips.jpg" alt="The app: a sidebar of videos and, for the selected one, a sunset-coloured progress line and four vertical clips, each with a title, the reason it was picked, its timestamps and a download link" width="958" height="540"></div>
+    <div class="shot"><img src="img/clips.webp" alt="The app: a sidebar of videos and, for the selected one, a sunset-coloured progress line and four vertical clips, each with a title, the reason it was picked, its timestamps and a download link" width="1440" height="760" decoding="async"></div>
     <div class="caption">Example run on <em>Big Buck Bunny</em> (© Blender Foundation, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>).</div>
   </header>
 
@@ -121,7 +122,7 @@
 
   <section>
     <div class="split">
-      <div><img src="img/facecam.jpg" alt="The Layout card: Facecam on top is selected and a pink box is drawn around the face on a frame of the video" width="696" height="550"></div>
+      <div><img src="img/facecam.webp" alt="The Layout card: Facecam on top is selected and a pink box is drawn around the face on a frame of the video" width="532" height="519" decoding="async"></div>
       <div>
         <h2>Facecam on top, gameplay below</h2>
         <p class="section-lead">Choose a simple center crop, or the streamer layout: drag a box around the facecam on a frame of the video, and the clips put it on top with the gameplay underneath. Changing the layout only re-renders the clips, so it takes about a minute.</p>
@@ -140,7 +141,7 @@
           <li><strong>Each clip comes with a .json file</strong> holding its title, reason, timestamps, creator and permission.</li>
         </ul>
       </div>
-      <div class="narrow"><img src="img/form.jpg" alt="The New video form with the link, creator name, permission, layout and moment-picker fields, and a Make clips button" width="437" height="528"></div>
+      <div class="narrow"><img src="img/form.webp" alt="The New video form with the link, creator name, permission, layout and moment-picker fields, and a Make clips button" width="608" height="776" decoding="async"></div>
     </div>
   </section>
 
@@ -170,7 +171,7 @@
       <div class="card">
         <h3>Steps</h3>
         <ol>
-          <li>Download and run <code>GTA6-Clipper-Setup.exe</code>. No admin rights needed.</li>
+          <li>Download and run <code>5tarClipper-Setup.exe</code>. No admin rights needed.</li>
           <li>The app opens in its own window. Follow the <strong>Setup</strong> checklist: FFmpeg, a YouTube helper and, optionally, the GPU files and the local AI model.</li>
           <li>Paste a link, fill in the creator and permission, press <strong>Make clips</strong>.</li>
           <li>Close the window to quit. If a video is still being processed, it asks first.</li>
@@ -178,7 +179,7 @@
       </div>
     </div>
     <p></p>
-    <div class="note"><strong>"Windows protected your PC"?</strong> The installer isn't code-signed yet, so Windows SmartScreen may warn you the first time. Click <strong>More info → Run anyway</strong>. You can check the code first on <a href="https://github.com/callofguns/GTA6-Clipper">GitHub</a>; each release is built from it.</div>
+    <div class="note"><strong>"Windows protected your PC"?</strong> The installer isn't code-signed yet, so Windows SmartScreen may warn you the first time. Click <strong>More info → Run anyway</strong>. You can check the code first on <a href="https://github.com/callofguns/5tarClipper">GitHub</a>; each release is built from it.</div>
   </section>
 
   <section>
@@ -187,7 +188,7 @@
   </section>
 
   <footer>
-    <p>GTA VI Clipper is a free, open-source fan tool, released under the <a href="https://github.com/callofguns/GTA6-Clipper/blob/main/LICENSE">MIT license</a>.</p>
+    <p>5tarClipper (formerly GTA VI Clipper) is a free, open-source fan tool, released under the <a href="https://github.com/callofguns/5tarClipper/blob/main/LICENSE">MIT license</a>.</p>
     <p>Text is set in SF Pro on Apple devices and <a href="https://rsms.me/inter/">Inter</a> elsewhere (<a href="fonts/Inter-OFL.txt">SIL Open Font License</a>).</p>
     <p>Not affiliated with or endorsed by Rockstar Games, Take-Two Interactive, YouTube, Twitch or Anthropic. Grand Theft Auto is a trademark of Take-Two Interactive Software.</p>
   </footer>

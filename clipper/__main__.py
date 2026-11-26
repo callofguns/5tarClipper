@@ -18,7 +18,7 @@ def cmd_web(cfg: dict, args) -> None:
 
     port = args.port or cfg.get("web", {}).get("port", 8765)
     url = f"http://127.0.0.1:{port}"
-    print(f"GTA VI Clipper is running at {url}  (only this PC can open it; Ctrl+C to stop)")
+    print(f"5tarClipper is running at {url}  (only this PC can open it; Ctrl+C to stop)")
     if not args.no_browser:
         threading.Timer(1.5, lambda: webbrowser.open(url)).start()
     # 127.0.0.1 = reachable only from this computer, not from your network or the internet.

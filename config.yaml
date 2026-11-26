@@ -1,4 +1,4 @@
-# GTA VI Clipper settings. No secrets in here (those go in .env).
+# 5tarClipper settings. No secrets in here (those go in .env).
 # Lines starting with # are comments.
 
 # ---------------------------------------------------------------
@@ -12,7 +12,7 @@ web:
 # ---------------------------------------------------------------
 video:
   # Where finished clips are saved. Leave empty for the default
-  # (output/review when run from the code, Videos\GTA6 Clipper in the installed app).
+  # (output/review when run from the code, Videos/5tarClipper in the installed app).
   output_folder:
 
   # Transcription (faster-whisper). "large-v3-turbo" is fast and accurate on an RTX 3070.

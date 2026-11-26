@@ -76,12 +76,22 @@ def claude_version() -> str | None:
     return version
 
 
+def ollama_installed() -> bool:
+    import os
+    default = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Ollama" / "ollama.exe"
+    return default.exists() or find_program("ollama", required=False) is not None
+
+
 def _local_ai_item() -> dict:
     from clipper.config import load_config
     from clipper.video import local_ai
     model = load_config()["video"]["local_model"]
     item = {"id": "localai", "name": f"Local AI model ({model}, free, runs on this PC)", "required": False}
     if not local_ai.server_running():
+        if ollama_installed():
+            return {**item, "ok": False, "action": "none",
+                    "help": "Ollama is installed but not running. Open Ollama from the Start menu, "
+                            "and this updates by itself."}
         return {**item, "ok": False, "action": "link", "link": "https://ollama.com/download",
                 "link_text": "Install Ollama",
                 "help": "Free alternative to Claude. Install Ollama, then come back here to download the model."}

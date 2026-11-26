@@ -5,7 +5,7 @@ same pull request as the change. The release build uses that file and stops if i
 Style: plain language, a **bold lead-in.** then what it means for the person using the app.
 Delete any section that has nothing in it.
 -->
-## GTA VI Clipper vX: <the theme of this release in a few words>
+## 5tarClipper vX: <the theme of this release in a few words>
 
 One or two sentences: what kind of release this is and why it matters.
 
@@ -23,13 +23,13 @@ One or two sentences: what kind of release this is and why it matters.
 
 ### Updating
 
-If you have v0.4-Beta or newer, open GTA VI Clipper and click **Update now** in the banner at the top. It installs and reopens by itself (or happens on its own when you close the app, if automatic updates are on). On v0.3-Beta or older? Download **GTA6-Clipper-Setup.exe** below and run it once; after that, updates take one click.
+If you have v0.4.2-Beta or newer, open 5tarClipper and click **Update now** in the banner at the top. It installs and reopens by itself (or happens on its own when you close the app, if automatic updates are on). On an older version? Download **5tarClipper-Setup.exe** below and run it once; after that, updates take one click.
 
 ### Files
 
-- `GTA6-Clipper-Setup.exe`: the installer. This is the one you want. Windows may say the app is from an unknown publisher because it isn't code-signed yet. Click **More info**, then **Run anyway**.
-- `GTA6-Clipper-Setup.exe.sha256`: used by the app's updater to check the download isn't damaged. You don't need to download this.
+- `5tarClipper-Setup.exe`: the installer. This is the one you want. Windows may say the app is from an unknown publisher because it isn't code-signed yet. Click **More info**, then **Run anyway**.
+- `5tarClipper-Setup.exe.sha256`: used by the app's updater to check the download isn't damaged. You don't need to download this.
 
 Only clip videos you have permission to use.
 
-More about GTA VI Clipper: https://callofguns.github.io/GTA6-Clipper/
+More about 5tarClipper: https://callofguns.github.io/5tarClipper/

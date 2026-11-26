@@ -22,7 +22,7 @@ PICKERS = ("auto", "claude", "local", "none")
 
 
 def create_app(cfg: dict) -> FastAPI:
-    app = FastAPI(title="GTA VI Clipper", docs_url=None, redoc_url=None)
+    app = FastAPI(title="5tarClipper", docs_url=None, redoc_url=None)
     # Block other websites from talking to this app (DNS rebinding / cross-site requests).
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
     store = JobStore(cfg)
