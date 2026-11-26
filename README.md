@@ -87,7 +87,7 @@ Settings like the number of clips, clip lengths, caption size and the Claude mod
 .\.venv\Scripts\python.exe -m PyInstaller packaging\gta6clipper.spec --noconfirm   # -> dist\GTA6 Clipper\
 & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DAppVersion=0.1-Beta packaging\installer.iss   # -> dist\GTA6-Clipper-Setup.exe
 ```
-Releases are built automatically by GitHub Actions (`.github/workflows/release.yml`) when a version tag like `v0.1-Beta` is pushed. The project page in `site/` is published to GitHub Pages by `.github/workflows/pages.yml`.
+Releases are built automatically by GitHub Actions (`.github/workflows/release.yml`) when a version tag like `v0.5-Beta` is pushed. Each release needs its notes in `packaging/release-notes/<tag>.md` (copy `TEMPLATE.md`), written in the same pull request as the changes; the build stops if they are missing. The project page in `site/` is published to GitHub Pages by `.github/workflows/pages.yml`.
 
 The installed app keeps its settings, caches and downloaded tools in `%LOCALAPPDATA%\GTA6 Clipper`, and saves clips to `Videos\GTA6 Clipper`.
 
